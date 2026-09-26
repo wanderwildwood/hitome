@@ -17,6 +17,7 @@ import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
+import android.view.accessibility.AccessibilityWindowInfo
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.Lifecycle
@@ -139,6 +140,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             sections.value.isNotEmpty() &&
             !katapultDrawing() &&
             !inCall() &&
+            !appOverLockScreen() &&
             !pinShowing()
         if (show) place() else remove()
         handler.removeCallbacks(recheck)
@@ -246,6 +248,19 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private fun pinShowing(): Boolean = try {
         val focus = service.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
         focus != null && focus.isVisibleToUser && focus.className?.contains("EditText") == true
+    } catch (_: Exception) {
+        false
+    }
+
+    /**
+     * An app has put something up over the lock screen: the call screen, an alarm. [inCall] is
+     * not enough on its own. A phone set to vibrate never puts its audio into ringing mode -- a
+     * Kompakt's log goes straight from normal to in-call when the call is answered -- so while it
+     * rang, a panel could sit over Accept and Decline. Whatever an app shows over the lock screen
+     * is what the person is there to look at, so the panel gives way to all of it.
+     */
+    private fun appOverLockScreen(): Boolean = try {
+        service.windows.any { it.type == AccessibilityWindowInfo.TYPE_APPLICATION }
     } catch (_: Exception) {
         false
     }
