@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The launcher foreground, on the white background of ic_launcher.xml. An eye: two lids meeting
+     at the corners, a ring for the iris, and the pupil as the one fill, as the envelope's seal is
+     in Email's. Drawn to the rules in kinokocho/tools/make-art.py: a thin line of one weight
+     (3.0 on the 108 grid, as Email's and Calendar's), few strokes, nothing outside the central
+     66 units the launcher mask keeps. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- the upper lid -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M27.6,54.4 C37.2,40.8 70.4,39.6 80.6,53.2" />
+
+    <!-- the lower lid -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M27.6,54.4 C38.6,66.6 69.2,67.8 80.6,53.2" />
+
+    <!-- the iris -->
+    <path
+        android:strokeColor="#000000"
+        android:strokeWidth="3.0"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:fillColor="#00000000"
+        android:pathData="M54.2,43.8 C60.0,43.6 64.4,48.2 64.2,53.8 C64.0,59.4 59.6,63.4 54.0,63.2 C48.6,63.0 44.4,58.8 44.6,53.4 C44.8,48.0 48.8,44.0 54.2,43.8 Z" />
+
+    <!-- the pupil -->
+    <path android:fillColor="#000000"
+        android:pathData="M54.3,49.6 A3.9,3.8 0 1 0 54.4,49.6 Z" />
+</vector>

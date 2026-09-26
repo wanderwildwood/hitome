@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Glance</string>
+    <string name="cd_about">About</string>
+
+    <!-- Main screen -->
+    <string name="service_off">The panel is off</string>
+    <string name="service_off_note">Turn on Glance in Accessibility. It also needs a screen lock, even just Swipe.</string>
+    <string name="service_on">The panel is on</string>
+    <string name="service_on_note">It shows on the lock screen. Turn it off in Accessibility.</string>
+    <string name="sources_heading">What it shows</string>
+    <string name="source_calendar">Calendar: today\'s events</string>
+    <string name="source_sky">Sky: the weather</string>
+    <string name="source_messaging">Messaging: unread</string>
+    <string name="source_email">Email: unread</string>
+    <string name="source_missing">Not installed</string>
+    <string name="sources_note">Each is switched on or off in that app\'s own settings.</string>
+
+    <!-- On the panel, when there were more of today's events than room: "+2 more" -->
+    <string name="panel_more">+%1$d more</string>
+
+    <!-- The accessibility service, as Android's Accessibility settings show it -->
+    <string name="service_label">Glance on the lock screen</string>
+    <string name="service_description">Shows today\'s events, the weather and what is unread on the lock screen, from Calendar, Sky, Messaging and Email. It reads the lock screen only to see where its own items end and whether the PIN pad is up, and it has no network access.</string>
+
+    <!-- About dialog. Keep the names of the app, people, projects and licences as they are -->
+    <string name="about_title">Glance %1$s</string>
+    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. It reads nothing else and has no network access.</string>
+    <string name="about_after">The lock-screen overlay follows Katapult by gezimos, GPL 3.0.</string>
+    <!-- The name of the app's licence -->
+    <string name="about_licence">GNU General Public License v3</string>
+    <string name="about_source" translatable="false">https://github.com/wanderwildwood/hitome</string>
+    <string name="about_icons">Icons from Material Symbols, Apache 2.0</string>
+    <!-- The donation link label, beside a drawing of a llama. A fixed phrase: a verb and an object, so the reader knows what pressing it does -->
+    <string name="about_feed_the_llamas">feed the llamas</string>
+    <string name="about_no_browser">There is no browser on this phone to open that with.</string>
+    <string name="about_close">Close</string>
+</resources>
