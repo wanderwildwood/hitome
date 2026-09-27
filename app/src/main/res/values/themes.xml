@@ -5,4 +5,12 @@
         <item name="android:statusBarColor">@android:color/white</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>
+
+    <!-- The lock-screen panel's window: no animation in or out. The system otherwise animated it
+         away, holding it on screen for 300-500 ms after an unlock, which on e-ink is the panel
+         seen lingering over the home screen. -->
+    <style name="PanelWindow">
+        <item name="android:windowEnterAnimation">@null</item>
+        <item name="android:windowExitAnimation">@null</item>
+    </style>
 </resources>

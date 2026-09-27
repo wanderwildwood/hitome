@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Events from the system UI only, which is the lock screen: they say when to look again.
      Window content is readable so the panel can find where the lock screen's own items end,
-     and stand aside while the PIN pad is up. -->
+     and stand aside while the PIN pad is up.
+     No notification timeout: events arrive as they happen rather than batched. At 100 ms an
+     unlock was sometimes heard after the lock screen had already gone, and the panel was then
+     taken down a beat behind it, which on e-ink is a separate redraw over the home screen. -->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
     android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged|typeViewFocused"
     android:accessibilityFeedbackType="feedbackGeneric"
@@ -9,4 +12,4 @@
     android:canRetrieveWindowContent="true"
     android:packageNames="com.android.systemui"
     android:description="@string/service_description"
-    android:notificationTimeout="100" />
+    android:notificationTimeout="0" />

@@ -13,9 +13,12 @@ import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.util.Log
 import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
+import android.view.MotionEvent
+import android.view.View
 import android.view.WindowManager
 import android.view.accessibility.AccessibilityNodeInfo
 import android.view.accessibility.AccessibilityWindowInfo
@@ -76,6 +79,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
         override fun onReceive(context: Context, intent: Intent) {
             // Read afresh on every wake, so the panel is never older than the last look.
             if (intent.action == Intent.ACTION_SCREEN_ON) readAll()
+            // A new look at the lock screen: whether its items can be read is learned afresh.
+            if (intent.action == Intent.ACTION_SCREEN_OFF) sawLockScreen = false
             evaluate()
         }
     }
@@ -147,19 +152,37 @@ class LockscreenPanel(private val service: AccessibilityService) :
     /** Until when to look again quickly. See [lockScreenChanged]. */
     private var quickUntil = 0L
 
+    /** Until when the panel stays down after the lock screen moved under it. See [place]. */
+    private var settleUntil = 0L
+    private var settleTop = -1
+
+    /** Whether the lock screen's items have been read since the screen came on. See [place]. */
+    private var sawLockScreen = false
+
     fun evaluate() {
         val keyguard = service.getSystemService(KeyguardManager::class.java)
         val power = service.getSystemService(PowerManager::class.java)
-        val show = keyguard.isKeyguardLocked &&
-            power.isInteractive &&
+        val locked = keyguard.isKeyguardLocked
+        val interactive = power.isInteractive
+        val covered = appOverLockScreen()
+        val show = locked &&
+            interactive &&
             sections.value.isNotEmpty() &&
             !katapultDrawing() &&
             !inCall() &&
-            !appOverLockScreen() &&
+            !covered &&
             !pinShowing()
-        if (show) place() else remove()
+        if (show) {
+            place()
+        } else {
+            if (overlay != null) {
+                Log.i(TAG, "hide: locked=$locked interactive=$interactive covered=$covered")
+            }
+            remove()
+        }
         handler.removeCallbacks(recheck)
-        if (overlay != null) {
+        // Looked at again while it is up, and while it waits to settle, so that it comes back.
+        if (overlay != null || SystemClock.uptimeMillis() < settleUntil + SETTLE_MS) {
             val quick = SystemClock.uptimeMillis() < quickUntil
             handler.postDelayed(recheck, if (quick) QUICK_RECHECK_MS else RECHECK_MS)
         }
@@ -168,10 +191,42 @@ class LockscreenPanel(private val service: AccessibilityService) :
     /** Adds the panel, or moves it when what the lock screen shows above it has changed. */
     private fun place() {
         val density = service.resources.displayMetrics.density
-        val top = lockScreenBottom()?.let { it + (GAP_DP * density).toInt() }
+        val bottom = lockScreenBottom()
+        // ⚠ The lock screen's own items gone, on a lock screen that had them, is the lock screen
+        // going: Android still says "locked" for up to 0.6 s after it has visibly gone, and a
+        // panel put back then was drawn over the home screen. The fallback place is only for
+        // lock screens that could never be read.
+        if (bottom == null && sawLockScreen) {
+            if (overlay != null) Log.i(TAG, "lock screen's items gone: down")
+            remove()
+            return
+        }
+        if (bottom != null) sawLockScreen = true
+        val top = bottom?.let { it + (GAP_DP * density).toInt() }
             ?: (FALLBACK_TOP_DP * density).toInt()
         if (overlay != null && top == overlayTop) return
-        remove()
+        val now = SystemClock.uptimeMillis()
+        // ⚠ Never moved while it is up. The lock screen rearranges itself as it goes away, and
+        // a panel that followed it was taken down and put up again as a new window at the
+        // moment of unlocking -- a full redraw on e-ink, over the home screen, which is the
+        // panel seen to linger. So a change of place takes it down, and it comes back only once
+        // the lock screen has held still; if the change was an unlock, it does not come back.
+        if (overlay != null) {
+            Log.i(TAG, "moved $overlayTop -> $top: down until it settles")
+            remove()
+            settleUntil = now + SETTLE_MS
+            settleTop = top
+            return
+        }
+        if (now < settleUntil) {
+            // Moved again while waiting: the wait starts over from here.
+            if (top != settleTop) {
+                settleUntil = now + SETTLE_MS
+                settleTop = top
+            }
+            return
+        }
+        Log.i(TAG, "show at $top")
         val screen = service.resources.displayMetrics.heightPixels
         val floor = screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
         val room = ((floor - top) / density).toInt().coerceAtLeast(0)
@@ -190,11 +245,19 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val params = WindowManager.LayoutParams().apply {
             type = WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY
             format = PixelFormat.TRANSLUCENT
-            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            // Told of any touch outside the panel, so that it can go the moment a swipe to
+            // unlock begins. See [touchedAway].
+            flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
             width = (WIDTH_DP * density).toInt()
             height = WindowManager.LayoutParams.WRAP_CONTENT
             gravity = Gravity.TOP or Gravity.CENTER_HORIZONTAL
+            windowAnimations = R.style.PanelWindow
             y = top
+        }
+        view.setOnTouchListener { _, event ->
+            if (event.actionMasked == MotionEvent.ACTION_OUTSIDE) touchedAway()
+            false
         }
         try {
             service.getSystemService(WindowManager::class.java).addView(view, params)
@@ -205,9 +268,39 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
     }
 
+    /**
+     * A finger went down somewhere else on the lock screen: most likely the start of the swipe
+     * that unlocks it. The panel goes now, before the unlock, because the lock screen vanishes
+     * the moment that swipe ends -- before Android says anything about unlocking -- and a
+     * panel that waited for the announcement was seen over whatever was underneath. If it was
+     * not an unlock, the panel comes back once the lock screen has held still for a moment.
+     */
+    private fun touchedAway() {
+        if (overlay == null) return
+        Log.i(TAG, "touched outside: down")
+        settleTop = overlayTop
+        settleUntil = SystemClock.uptimeMillis() + TOUCH_HOLD_MS
+        remove()
+        evaluate()
+    }
+
+    /**
+     * Takes the panel down at once.
+     *
+     * ⚠ `removeView` alone was not at once: the system animated the window out, and the panel
+     * stayed on screen for a further 300-500 ms after it was asked to go -- measured on a
+     * Kompakt, from the request to the layer leaving the compositor -- which is the panel seen
+     * lingering over the home screen. So the window has no animations (`R.style.PanelWindow`),
+     * what is drawn is hidden first, and the window goes on the frame after that.
+     */
     private fun remove() {
-        overlay?.let {
-            try { service.getSystemService(WindowManager::class.java).removeView(it) } catch (_: Exception) {}
+        overlay?.let { view ->
+            view.visibility = View.INVISIBLE
+            // Removed once the blank frame has been drawn, not before: removed at once, the
+            // screen kept the last picture of the panel for as long as the window took to go.
+            view.postOnAnimation {
+                try { service.getSystemService(WindowManager::class.java).removeViewImmediate(view) } catch (_: Exception) {}
+            }
         }
         overlay = null
         overlayTop = -1
@@ -313,8 +406,16 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // How often the panel looks again while it is up: the music strips' interval. Faster
         // for most of a second after the lock screen reports a change, which is when an
         // unlock is under way. See [lockScreenChanged].
+        const val TAG = "GlancePanel"
         const val RECHECK_MS = 120L
         const val QUICK_RECHECK_MS = 40L
         const val QUICK_FOR_MS = 800L
+        // How long the lock screen must hold still under the panel before it comes back.
+        const val SETTLE_MS = 300L
+        // How long the panel stays down after a touch elsewhere. Long enough to outlast a swipe
+        // to unlock: only the finger going down is reported, not it lifting, and a second was
+        // measured to run out mid-swipe on a Kompakt, bringing the panel back just as the lock
+        // screen went.
+        const val TOUCH_HOLD_MS = 3_000L
     }
 }
