@@ -13,6 +13,7 @@ import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
 import android.os.PowerManager
+import android.os.SystemClock
 import android.provider.Settings
 import android.view.Gravity
 import android.view.WindowManager
@@ -132,6 +133,20 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
     }
 
+    /**
+     * The lock screen said something changed: a swipe began, the PIN pad came up, it is going
+     * away. Looked at at once, then often for a moment, because the lock screen reports itself
+     * locked for a few frames after an unlock has begun, and a panel still standing then is
+     * one the reader sees over their home screen.
+     */
+    fun lockScreenChanged() {
+        quickUntil = SystemClock.uptimeMillis() + QUICK_FOR_MS
+        evaluate()
+    }
+
+    /** Until when to look again quickly. See [lockScreenChanged]. */
+    private var quickUntil = 0L
+
     fun evaluate() {
         val keyguard = service.getSystemService(KeyguardManager::class.java)
         val power = service.getSystemService(PowerManager::class.java)
@@ -144,7 +159,10 @@ class LockscreenPanel(private val service: AccessibilityService) :
             !pinShowing()
         if (show) place() else remove()
         handler.removeCallbacks(recheck)
-        if (overlay != null) handler.postDelayed(recheck, RECHECK_MS)
+        if (overlay != null) {
+            val quick = SystemClock.uptimeMillis() < quickUntil
+            handler.postDelayed(recheck, if (quick) QUICK_RECHECK_MS else RECHECK_MS)
+        }
     }
 
     /** Adds the panel, or moves it when what the lock screen shows above it has changed. */
@@ -292,6 +310,11 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // that are the padlock and "Swipe Up".
         const val UPPER_PART = 0.6f
         const val STATUS_BAR_PX = 48
-        const val RECHECK_MS = 250L
+        // How often the panel looks again while it is up: the music strips' interval. Faster
+        // for most of a second after the lock screen reports a change, which is when an
+        // unlock is under way. See [lockScreenChanged].
+        const val RECHECK_MS = 120L
+        const val QUICK_RECHECK_MS = 40L
+        const val QUICK_FOR_MS = 800L
     }
 }

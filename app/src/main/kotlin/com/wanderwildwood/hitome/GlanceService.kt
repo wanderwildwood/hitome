@@ -19,7 +19,7 @@ class GlanceService : AccessibilityService() {
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
-        panel?.evaluate()
+        panel?.lockScreenChanged()
     }
 
     override fun onInterrupt() = Unit
