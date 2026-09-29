@@ -45,5 +45,8 @@ The list of apps you chose and whether to show what they say, and nothing else: 
 aapt2 dump badging hitome.apk | grep uses-permission
 ```
 
-prints nothing: there are no permissions to print. Notification access is not a permission an
-app asks for; it is a switch in Android's settings that you turn on or leave off.
+prints one line, `com.wanderwildwood.hitome.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. That is
+not a permission over anything on the phone: AndroidX declares it inside every app built against
+it, so that the app's own internal broadcasts cannot be sent by anyone else, and it names Glance
+itself. Glance asks for no permission of the phone. Notification access is not a permission an
+app asks for either; it is a switch in Android's settings that you turn on or leave off.
