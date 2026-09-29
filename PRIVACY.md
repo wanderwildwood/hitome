@@ -1,7 +1,8 @@
 # Privacy
 
-Glance shows on the lock screen what four apps on the phone hand it. It has no network access,
-no permissions, and sends nothing anywhere.
+Glance shows on the lock screen what four apps on the phone hand it and, if you turn it on, how
+many notifications the apps you choose have waiting. It has no network access, no permissions,
+and sends nothing anywhere.
 
 ## What it reads
 
@@ -13,16 +14,25 @@ no permissions, and sends nothing anywhere.
   so the panel can sit under them, and whether the PIN pad is up, so the panel can stand aside.
   The service listens to the system UI alone (`app/src/main/res/xml/glance_service.xml`) and
   reads nothing from any other app.
+- **Other apps' notifications, counted - only if you turn it on.** This is Android's notification
+  access, off until you switch it on for Glance, and it is the one place Glance could see more
+  than it shows: Android gives notification access to every notification. Glance uses it to
+  count, and only for the apps you chose in Glance - with none chosen it counts nothing. It never
+  reads a notification's title or text. Left uncounted: ongoing ones (a player, a download), a
+  group's summary, and anything the app or you have marked secret on the lock screen. Messaging
+  and Email are never counted this way; they have their own line. The code is
+  `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
 
 ## What anyone can see
 
 The panel is on the lock screen, so whoever holds the phone can read it without unlocking it:
-today's event titles among them. Each app's switch is there for exactly this. Pressing the panel
+today's event titles among them, and which chosen apps have something waiting. Each app's switch,
+and the list of apps you choose, is there for exactly this. Pressing the panel
 asks for the phone's lock before opening anything, so a PIN still protects what is behind it.
 
 ## What it stores
 
-Nothing. It keeps no settings, no history and no copy of what it shows.
+The list of apps you chose, and nothing else: no history and no copy of what it shows.
 
 ## Checking for yourself
 
@@ -30,4 +40,5 @@ Nothing. It keeps no settings, no history and no copy of what it shows.
 aapt2 dump badging hitome.apk | grep uses-permission
 ```
 
-prints nothing: there are no permissions to print.
+prints nothing: there are no permissions to print. Notification access is not a permission an
+app asks for; it is a switch in Android's settings that you turn on or leave off.

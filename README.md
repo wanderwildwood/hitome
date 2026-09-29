@@ -21,12 +21,15 @@ A panel under the clock and date, in the lock screen's own dotted rules:
 - **Unread**, from [Messaging](https://github.com/wanderwildwood/kotozute) and
   [Email](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
   nothing is unread.
+- **Other apps**, if you want them: the name of each app you choose and how many notifications
+  it has waiting - "Signal 2 · Clock 1" - on up to two lines. Never what they say.
 
-Pressing a section unlocks the phone and opens the app it came from.
+Pressing a section, or an app's name, unlocks the phone and opens that app.
 
 Glance knows nothing on its own. Each app hands it its own lines and has its own switch, in its
 own settings, to stop. An app that is not installed, has nothing to say, or has its switch off
-simply leaves no line.
+simply leaves no line. Other apps are the exception: Glance counts their notifications itself,
+and only for the apps you choose.
 
 ## Where it sits
 
@@ -44,8 +47,12 @@ widgets of its own, so while Katapult's are on, Glance stands aside.
 2. Open Glance and press **The panel is off**: it opens Android's Accessibility settings. Turn on
    **Glance on the lock screen**.
 
+3. For other apps: press **Notifications are not counted**, turn on notification access for
+   Glance, then **Choose apps**. Nothing is counted until you choose at least one.
+
 An overlay above the lock screen is a window only an accessibility service is allowed to add,
-which is why it needs that switch. See [PRIVACY.md](PRIVACY.md) for what it reads.
+which is why it needs that switch. Counting notifications needs notification access, which
+Android grants to all of them; Glance counts only the ones you chose. See [PRIVACY.md](PRIVACY.md) for what it reads.
 
 ## Getting it, and keeping it
 

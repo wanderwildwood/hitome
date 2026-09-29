@@ -5,6 +5,9 @@
       No permissions at all, and no INTERNET. It reads what four apps hand it through their own
       providers, which answer this app alone, and draws it over the lock screen as an
       accessibility service - a switch the phone's owner turns on in Accessibility.
+
+      Counting other apps' notifications is a second switch, off until the owner turns on
+      notification access for it, and counts only the apps they choose in Glance.
     -->
 
     <queries>
@@ -12,6 +15,11 @@
         <package android:name="com.wanderwildwood.soramoyo" />
         <package android:name="com.wanderwildwood.kotozute" />
         <package android:name="com.wanderwildwood.tayori" />
+        <!-- The apps there are to choose from, for counting their notifications. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent>
     </queries>
 
     <application
@@ -52,6 +60,16 @@
             <meta-data
                 android:name="android.accessibilityservice"
                 android:resource="@xml/glance_service" />
+        </service>
+
+        <service
+            android:name=".NoticeListener"
+            android:exported="true"
+            android:label="@string/listener_label"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
         </service>
     </application>
 

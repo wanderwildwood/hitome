@@ -5,14 +5,17 @@ import android.content.Intent
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -21,6 +24,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -28,6 +32,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.mudita.mmd.ThemeMMD
 import com.mudita.mmd.components.lazy.LazyColumnMMD
+import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.hitome.ui.AboutDialog
@@ -43,14 +48,15 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * The one screen: whether the panel is on, and where its lines come from. There is nothing to
- * set here - each app's own settings say whether it shows - so the screen is a door to the
- * accessibility switch and a list of the apps that take part.
+ * Whether the panel is on, and where its lines come from. Calendar, Sky, Messaging and Email
+ * each say in their own settings whether they show, so for them this screen is only a door;
+ * other apps are counted from their notifications, which is switched on and chosen here.
  */
 @Composable
 private fun MainScreen() {
     val context = LocalContext.current
     var aboutOpen by remember { mutableStateOf(false) }
+    var choosing by remember { mutableStateOf(false) }
     // Re-read on every return, which is usually from the accessibility settings.
     var checks by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
@@ -60,6 +66,14 @@ private fun MainScreen() {
     val serviceOn = remember(checks) { serviceEnabled(context) }
     val installed = remember(checks) {
         SOURCES.associate { (pkg, _) -> pkg to (context.packageManager.getLaunchIntentForPackage(pkg) != null) }
+    }
+    val access = remember(checks) { Notices.accessGranted(context) }
+    val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
+
+    if (choosing) {
+        BackHandler { choosing = false }
+        ChooseAppsScreen { choosing = false }
+        return
     }
 
     Scaffold(
@@ -103,6 +117,35 @@ private fun MainScreen() {
                 TextMMD(
                     text = stringResource(R.string.sources_note),
                     style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 10.dp),
+                )
+            }
+            item {
+                TextMMD(
+                    text = stringResource(R.string.others_heading),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 18.dp, bottom = 2.dp),
+                )
+            }
+            item {
+                Row(
+                    title = stringResource(if (access) R.string.access_on else R.string.access_off),
+                    value = stringResource(if (access) R.string.access_on_note else R.string.access_off_note),
+                ) { openNotificationAccess(context) }
+            }
+            if (access) {
+                item {
+                    Row(
+                        title = stringResource(R.string.choose_apps),
+                        value = if (chosenCount == 0) stringResource(R.string.chosen_none)
+                            else stringResource(R.string.chosen_some).format(chosenCount),
+                    ) { choosing = true }
+                }
+            }
+            item {
+                TextMMD(
+                    text = stringResource(R.string.others_note),
+                    style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 10.dp, bottom = 24.dp),
                 )
             }
@@ -116,6 +159,80 @@ private fun Row(title: String, value: String?, onClick: () -> Unit) {
     Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp)) {
         TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
         if (value != null) TextMMD(text = value, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+/**
+ * Every app with a place in the launcher, to choose which have their notifications counted.
+ * Messaging and Email are left out: they have their own line. Glance too, which posts nothing.
+ */
+@Composable
+private fun ChooseAppsScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val apps = remember {
+        val pm = context.packageManager
+        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+        pm.queryIntentActivities(launcher, 0)
+            .map { it.activityInfo.applicationInfo }
+            .distinctBy { it.packageName }
+            .filter { it.packageName != context.packageName && it.packageName !in Glance.COUNTS }
+            .map { it.packageName to pm.getApplicationLabel(it).toString() }
+            .sortedBy { it.second.lowercase() }
+    }
+    // Two apps may share a name (Android's own Calendar and this one): those say which is which.
+    val shared = remember(apps) { apps.groupBy { it.second }.filterValues { it.size > 1 }.keys }
+    var chosen by remember { mutableStateOf(Notices.chosen(context)) }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            TopAppBarMMD(
+                title = { TextMMD(text = stringResource(R.string.choose_apps)) },
+                navigationIcon = { BarButton(Icons.Back, stringResource(R.string.cd_back), onBack) },
+            )
+        },
+    ) { padding ->
+        LazyColumnMMD(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            apps.forEach { (pkg, label) ->
+                item(key = pkg) {
+                    val on = pkg in chosen
+                    SwitchRow(label, if (label in shared) pkg else null, on) {
+                        Notices.setChosen(context, pkg, !on)
+                        chosen = Notices.chosen(context)
+                    }
+                }
+            }
+            item { Spacer(Modifier.height(24.dp)) }
+        }
+    }
+}
+
+@Composable
+private fun SwitchRow(title: String, note: String?, checked: Boolean, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f)) {
+            TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
+            if (note != null) TextMMD(text = note, style = MaterialTheme.typography.labelSmall)
+        }
+        Spacer(Modifier.width(12.dp))
+        SwitchMMD(checked = checked, onCheckedChange = null)
+    }
+}
+
+/** Android's notification-access page, Glance's own entry if the phone has that page. */
+private fun openNotificationAccess(context: android.content.Context) {
+    val detail = Intent(Settings.ACTION_NOTIFICATION_LISTENER_DETAIL_SETTINGS)
+        .putExtra(
+            Settings.EXTRA_NOTIFICATION_LISTENER_COMPONENT_NAME,
+            ComponentName(context, NoticeListener::class.java).flattenToString(),
+        )
+    try {
+        context.startActivity(detail)
+    } catch (_: Exception) {
+        try { context.startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } catch (_: Exception) {}
     }
 }
 

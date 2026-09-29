@@ -46,7 +46,8 @@ import kotlinx.coroutines.withContext
 
 /**
  * The panel on the lock screen: today's events, the weather, and what is unread, each from the
- * app it belongs to (see [Glance]).
+ * app it belongs to (see [Glance]), then how many notifications each chosen app has waiting
+ * (see [Notices]).
  *
  * It is an accessibility overlay, the one kind of window the system draws above the lock
  * screen, and only an accessibility service may add one. The way it is added, and when it is
@@ -70,6 +71,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
 
     private val handler = Handler(Looper.getMainLooper())
     private val sections = mutableStateOf<List<Glance.Section>>(emptyList())
+    private val notices = mutableStateOf<List<Notices.Notice>>(emptyList())
     private var scope: CoroutineScope? = null
     private var reading: Job? = null
     private var overlay: ComposeView? = null
@@ -112,6 +114,12 @@ class LockscreenPanel(private val service: AccessibilityService) :
             try {
                 service.contentResolver.registerContentObserver(Glance.uri(pkg), true, changes)
             } catch (_: Exception) {}
+        }
+        scope?.launch {
+            Notices.now.collect {
+                notices.value = it
+                evaluate()
+            }
         }
         readAll()
     }
@@ -167,7 +175,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val covered = appOverLockScreen()
         val show = locked &&
             interactive &&
-            sections.value.isNotEmpty() &&
+            (sections.value.isNotEmpty() || notices.value.isNotEmpty()) &&
             !katapultDrawing() &&
             !inCall() &&
             !covered &&
@@ -237,6 +245,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             setContent {
                 GlancePanel(
                     sections = sections.value,
+                    notices = notices.value,
                     roomDp = room,
                     onOpen = { pkg -> open(pkg) },
                 )
@@ -392,7 +401,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         const val SYSTEM_UI = "com.android.systemui"
         const val KATAPULT = "com.gezimos.katapult"
         // The width of the lock screen's own dotted rules, so the panel lines up under them.
-        const val WIDTH_DP = 240f
+        const val WIDTH_DP = com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP.toFloat()
         const val GAP_DP = 8f
         // Where the panel goes if the lock screen cannot be read: under the date and a
         // charging line, which is where Mudita's own widget ends.

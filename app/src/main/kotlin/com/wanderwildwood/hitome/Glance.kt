@@ -26,7 +26,11 @@ object Glance {
         "com.wanderwildwood.soramoyo",
     )
 
-    /** Counts that share one line at the foot: unread messages, then unread mail. */
+    /**
+     * Counts that share one line at the foot: unread messages, then unread mail. These two say
+     * what is unread themselves, so they are never among the apps whose notifications are
+     * counted (see [Notices]), which would show them twice.
+     */
     val COUNTS = listOf(
         "com.wanderwildwood.kotozute",
         "com.wanderwildwood.tayori",
