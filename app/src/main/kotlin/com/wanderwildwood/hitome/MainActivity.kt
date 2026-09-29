@@ -69,6 +69,7 @@ private fun MainScreen() {
     }
     val access = remember(checks) { Notices.accessGranted(context) }
     val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
+    var showText by remember { mutableStateOf(Notices.showText(context)) }
 
     if (choosing) {
         BackHandler { choosing = false }
@@ -140,6 +141,16 @@ private fun MainScreen() {
                         value = if (chosenCount == 0) stringResource(R.string.chosen_none)
                             else stringResource(R.string.chosen_some).format(chosenCount),
                     ) { choosing = true }
+                }
+                item {
+                    SwitchRow(
+                        title = stringResource(R.string.show_text),
+                        note = stringResource(R.string.show_text_note),
+                        checked = showText,
+                    ) {
+                        showText = !showText
+                        Notices.setShowText(context, showText)
+                    }
                 }
             }
             item {

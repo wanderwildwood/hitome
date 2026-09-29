@@ -25,10 +25,14 @@
     <string name="chosen_none">None chosen</string>
     <!-- How many apps have their notifications counted: "3 chosen" -->
     <string name="chosen_some">%1$d chosen</string>
-    <string name="others_note">Only the app\'s name and how many, never what a notification says.</string>
+    <string name="show_text">Show what they say</string>
+    <string name="show_text_note">The newest from each app, on the lock screen, where anyone holding the phone can read it.</string>
+    <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden.</string>
 
     <!-- On the panel, when there were more of today's events than room: "+2 more" -->
     <string name="panel_more">+%1$d more</string>
+    <!-- On the panel, when more apps have notifications than there are lines: "+2 more apps" -->
+    <string name="panel_more_apps">+%1$d more apps</string>
 
     <!-- The accessibility service, as Android's Accessibility settings show it -->
     <string name="service_label">Glance on the lock screen</string>
@@ -38,7 +42,7 @@
 
     <!-- About dialog. Keep the names of the app, people, projects and licences as they are -->
     <string name="about_title">Glance %1$s</string>
-    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. With notification access on, it counts the notifications of the apps you choose, and never reads what they say. It has no network access.</string>
+    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. With notification access on, it counts the notifications of the apps you choose, and reads what they say only if you turn that on. It has no network access.</string>
     <string name="about_after">The lock-screen overlay follows Katapult by gezimos, GPL 3.0.</string>
     <!-- The name of the app's licence -->
     <string name="about_licence">GNU General Public License v3</string>

@@ -23,7 +23,9 @@ A panel under the clock and date, in the lock screen's own dotted rules:
   [Email](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
   nothing is unread.
 - **Other apps**, if you want them: the name of each app you choose and how many notifications
-  it has waiting - "Signal 2 · Clock 1" - on up to two lines. Never what they say.
+  it has waiting - "Signal 2 · Clock 1" - on up to two lines. What they say stays off the lock
+  screen unless you turn on **Show what they say**; then each app gets a line with its newest
+  notification, "Signal 2  Mom: see you at five", except where Android itself would hide it.
 
 Pressing a section, or an app's name, unlocks the phone and opens that app.
 

@@ -17,8 +17,12 @@ and sends nothing anywhere.
 - **Other apps' notifications, counted - only if you turn it on.** This is Android's notification
   access, off until you switch it on for Glance, and it is the one place Glance could see more
   than it shows: Android gives notification access to every notification. Glance uses it to
-  count, and only for the apps you chose in Glance - with none chosen it counts nothing. It never
-  reads a notification's title or text. Left uncounted: ongoing ones (a player, a download), a
+  count, and only for the apps you chose in Glance - with none chosen it counts nothing. It reads
+  a notification's title and text only if you turn on **Show what they say** (off until you do),
+  and then only the newest from each chosen app, to put on the lock screen. Where Android would
+  hide a notification's content on the lock screen - the phone set to hide private content, and
+  the notification or its channel marked private - Glance shows its public version or nothing
+  but the count. Left uncounted: ongoing ones (a player, a download), a
   group's summary, and anything the app or you have marked secret on the lock screen. Messaging
   and Email are never counted this way; they have their own line. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
@@ -26,13 +30,14 @@ and sends nothing anywhere.
 ## What anyone can see
 
 The panel is on the lock screen, so whoever holds the phone can read it without unlocking it:
-today's event titles among them, and which chosen apps have something waiting. Each app's switch,
+today's event titles among them, which chosen apps have something waiting, and - if you turn it
+on - what their newest notifications say. Each app's switch,
 and the list of apps you choose, is there for exactly this. Pressing the panel
 asks for the phone's lock before opening anything, so a PIN still protects what is behind it.
 
 ## What it stores
 
-The list of apps you chose, and nothing else: no history and no copy of what it shows.
+The list of apps you chose and whether to show what they say, and nothing else: no history and no copy of what it shows.
 
 ## Checking for yourself
 

@@ -57,9 +57,13 @@ fun GlancePanel(
     ThemeMMD(colorScheme = monochrome) {
         val stacked = sections.filter { it.packageName in Glance.STACKED }
         val counts = sections.filter { it.packageName in Glance.COUNTS }
-        val noticeRows = packNotices(notices)
-        val footDp = if (counts.isEmpty() && noticeRows.isEmpty()) 0
-            else RULE_DP + PAD_DP + (if (counts.isNotEmpty()) LINE_DP else 0) + noticeRows.size * LINE_DP
+        // With the words shown, each app has a line of its own; without, the names share lines.
+        val withText = notices.any { it.text != null }
+        val noticeRows = if (withText) emptyList() else packNotices(notices)
+        val textLines = if (withText) textLines(notices) else emptyList()
+        val noticeLines = noticeRows.size + textLines.size
+        val footDp = if (counts.isEmpty() && noticeLines == 0) 0
+            else RULE_DP + PAD_DP + (if (counts.isNotEmpty()) LINE_DP else 0) + noticeLines * LINE_DP
         val fitted = fit(stacked, footDp, roomDp)
         Column(Modifier.fillMaxWidth().background(Color.White)) {
             fitted.forEach { section ->
@@ -76,7 +80,7 @@ fun GlancePanel(
                     section.lines.forEach { line -> LineRow(line) }
                 }
             }
-            if (counts.isNotEmpty() || noticeRows.isNotEmpty()) {
+            if (counts.isNotEmpty() || noticeLines > 0) {
                 Rule()
                 Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
                     if (counts.isNotEmpty()) {
@@ -89,6 +93,29 @@ fun GlancePanel(
                                     maxLines = 1,
                                     overflow = TextOverflow.Ellipsis,
                                     modifier = Modifier.clickable { onOpen(section.packageName) },
+                                )
+                            }
+                        }
+                    }
+                    textLines.forEach { line ->
+                        Row(
+                            Modifier.fillMaxWidth().then(
+                                if (line.packageName != null) Modifier.clickable { onOpen(line.packageName) } else Modifier,
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            TextMMD(
+                                text = line.name,
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                            )
+                            if (line.text != null) {
+                                TextMMD(
+                                    text = "  " + line.text,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -111,7 +138,7 @@ fun GlancePanel(
                     }
                 }
             }
-            if (fitted.isNotEmpty() || counts.isNotEmpty() || noticeRows.isNotEmpty()) Rule()
+            if (fitted.isNotEmpty() || counts.isNotEmpty() || noticeLines > 0) Rule()
         }
     }
 }
@@ -206,11 +233,29 @@ private fun packNotices(notices: List<Notices.Notice>): List<List<NoticeItem>> {
     return rows
 }
 
+/** Most apps given a line of their own when what they say is shown; the rest are counted. */
+private const val TEXT_ROWS = 3
+
+/** A line of an app's words: "Signal 2" in bold, then what the newest one says. */
+private data class TextLine(val name: String, val text: String?, val packageName: String?)
+
+/**
+ * One line per app, newest first, up to [TEXT_ROWS]; past that, the last line says how many
+ * apps more. An app whose words are not to be shown keeps its line with only its name.
+ */
+@Composable
+private fun textLines(notices: List<Notices.Notice>): List<TextLine> {
+    val lines = notices.map { TextLine("${it.label} ${it.count}", it.text, it.packageName) }
+    if (lines.size <= TEXT_ROWS) return lines
+    val more = stringResource(R.string.panel_more_apps).format(lines.size - (TEXT_ROWS - 1))
+    return lines.take(TEXT_ROWS - 1) + TextLine(more, null, null)
+}
+
 /**
  * The first section, today's events, gives up lines from its end until everything fits in
  * [roomDp], and says how many it left out. It always keeps its first line: "+3 more" on its own
  * says there is something today without saying what. Nothing else is cut - the weather is two
- * lines at most, the counts one, and other apps' notifications two.
+ * lines at most, the counts one, and other apps' notifications three.
  */
 @Composable
 private fun fit(stacked: List<Glance.Section>, footDp: Int, roomDp: Int): List<Glance.Section> {
