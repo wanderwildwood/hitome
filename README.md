@@ -28,6 +28,7 @@ A panel under the clock and date, in the lock screen's own dotted rules:
   it has waiting - "Signal 2 · Clock 1" - on up to two lines. What they say stays off the lock
   screen unless you turn on **Show what they say**; then each app gets a line with its newest
   notification, "Signal 2  Mom: see you at five", except where Android itself would hide it.
+  Messaging and Email then get a line of their words too, under their counts.
 
 Pressing a section, or an app's name, unlocks the phone and opens that app.
 

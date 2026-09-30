@@ -18,8 +18,18 @@ import kotlinx.coroutines.flow.StateFlow
  */
 object Notices {
 
-    /** [text] is the newest notification's words, or null when they are not to be shown. */
-    data class Notice(val packageName: String, val label: String, val count: Int, val text: String? = null)
+    /**
+     * [text] is the newest notification's words, or null when they are not to be shown.
+     * [counted] is false for Messaging and Email, which say how many themselves on their own
+     * line and are here only for their words.
+     */
+    data class Notice(
+        val packageName: String,
+        val label: String,
+        val count: Int,
+        val text: String? = null,
+        val counted: Boolean = true,
+    )
 
     private val _now = MutableStateFlow<List<Notice>>(emptyList())
     val now: StateFlow<List<Notice>> get() = _now
@@ -92,7 +102,8 @@ class NoticeListener : NotificationListenerService() {
 
     fun recount() {
         val chosen = Notices.chosen(this)
-        if (chosen.isEmpty()) {
+        val showText = Notices.showText(this)
+        if (chosen.isEmpty() && !showText) {
             Notices.publish(emptyList())
             return
         }
@@ -103,8 +114,12 @@ class NoticeListener : NotificationListenerService() {
         val latest = mutableMapOf<String, Long>()
         val newest = mutableMapOf<String, android.service.notification.StatusBarNotification>()
         val counts = mutableMapOf<String, Int>()
+        // Messaging's and Email's newest, for their words only: they count themselves.
+        val own = mutableMapOf<String, android.service.notification.StatusBarNotification>()
         active.forEach { sbn ->
-            if (sbn.packageName !in chosen || sbn.packageName in Glance.SOURCES) return@forEach
+            val pkg = sbn.packageName
+            val isOwn = showText && pkg in Glance.COUNTS
+            if (!isOwn && (pkg !in chosen || pkg in Glance.SOURCES)) return@forEach
             val n = sbn.notification
             if (sbn.isOngoing) return@forEach
             if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return@forEach
@@ -114,13 +129,21 @@ class NoticeListener : NotificationListenerService() {
                 if (rank.channel?.lockscreenVisibility == Notification.VISIBILITY_SECRET) return@forEach
                 if (rank.isSuspended) return@forEach
             }
-            counts[sbn.packageName] = (counts[sbn.packageName] ?: 0) + 1
-            if (sbn.postTime >= (latest[sbn.packageName] ?: 0L)) newest[sbn.packageName] = sbn
-            latest[sbn.packageName] = maxOf(latest[sbn.packageName] ?: 0L, sbn.postTime)
+            if (isOwn) {
+                if (sbn.postTime >= (own[pkg]?.postTime ?: 0L)) own[pkg] = sbn
+                return@forEach
+            }
+            counts[pkg] = (counts[pkg] ?: 0) + 1
+            if (sbn.postTime >= (latest[pkg] ?: 0L)) newest[pkg] = sbn
+            latest[pkg] = maxOf(latest[pkg] ?: 0L, sbn.postTime)
         }
-        val showText = Notices.showText(this)
+        // Messaging, then Email, first: they sit under their own counts line.
+        val ownLines = Glance.COUNTS.mapNotNull { pkg ->
+            val text = own[pkg]?.let { words(it, ranking, rank) } ?: return@mapNotNull null
+            Notices.Notice(pkg, label(pkg), 0, text, counted = false)
+        }
         Notices.publish(
-            counts.entries
+            ownLines + counts.entries
                 .sortedByDescending { latest[it.key] ?: 0L }
                 .map { (pkg, count) ->
                     val text = if (showText) newest[pkg]?.let { words(it, ranking, rank) } else null

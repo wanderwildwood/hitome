@@ -43,7 +43,7 @@
     <!-- How many apps have their notifications counted: "3 chosen" -->
     <string name="chosen_some">%1$d chosen</string>
     <string name="show_text">Show what they say</string>
-    <string name="show_text_note">The newest from each app, on the lock screen, where anyone holding the phone can read it.</string>
+    <string name="show_text_note">The newest from each chosen app, and from Messaging and Email, on the lock screen, where anyone holding the phone can read it.</string>
     <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden.</string>
 
     <!-- On the panel, when there were more of today's events than room: "+2 more" -->

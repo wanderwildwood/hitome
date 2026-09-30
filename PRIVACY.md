@@ -31,7 +31,9 @@ today's events itself, if you turn that on. It has no network access and sends n
   the notification or its channel marked private - Glance shows its public version or nothing
   but the count. Left uncounted: ongoing ones (a player, a download), a
   group's summary, and anything the app or you have marked secret on the lock screen. Calendar,
-  Sky, Messaging and Email are never counted this way; they have their own place on the panel. The code is
+  Sky, Messaging and Email are never counted this way; they have their own place on the panel.
+  With **Show what they say** on, Messaging's and Email's newest notification is read too, for
+  its words only, under the same rules. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
 
 ## What anyone can see

@@ -61,6 +61,9 @@ fun GlancePanel(
         val counts = sections.filter { it.packageName in Glance.COUNTS }
         // With the words shown, each app has a line of its own; without, the names share lines.
         val withText = notices.any { it.text != null }
+        // Without words, Messaging's and Email's entries have nothing to add to their counts.
+        @Suppress("NAME_SHADOWING")
+        val notices = if (withText) notices else notices.filter { it.counted }
         val noticeRows = if (withText) emptyList() else packNotices(notices)
         val textLines = if (withText) textLines(notices) else emptyList()
         val noticeLines = noticeRows.size + textLines.size
@@ -247,7 +250,8 @@ private data class TextLine(val name: String, val text: String?, val packageName
  */
 @Composable
 private fun textLines(notices: List<Notices.Notice>): List<TextLine> {
-    val lines = notices.map { TextLine("${it.label} ${it.count}", it.text, it.packageName) }
+    // Messaging and Email say how many on their own line above, so here only their name.
+    val lines = notices.map { TextLine(if (it.counted) "${it.label} ${it.count}" else it.label, it.text, it.packageName) }
     if (lines.size <= TEXT_ROWS) return lines
     val more = stringResource(R.string.panel_more_apps).format(lines.size - (TEXT_ROWS - 1))
     return lines.take(TEXT_ROWS - 1) + TextLine(more, null, null)
