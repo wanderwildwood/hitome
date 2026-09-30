@@ -15,7 +15,6 @@ import android.os.Looper
 import android.os.PowerManager
 import android.util.Log
 import android.os.SystemClock
-import android.provider.Settings
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
@@ -36,6 +35,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.wanderwildwood.hitome.ui.GlancePanel
+import com.wanderwildwood.hitome.ui.leastDp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,11 +53,11 @@ import kotlinx.coroutines.withContext
  * screen, and only an accessibility service may add one. The way it is added, and when it is
  * taken down, follows Katapult by gezimos (GPL-3.0), whose lock-screen widgets work this way.
  *
- * It shows only while the phone is locked with the screen on, the PIN pad is not up, no call is
- * ringing or live, and Katapult is not drawing lock-screen widgets of its own. It sits under the
- * lowest thing the lock screen itself shows in its upper half - the date, or the charging line,
- * or Mudita's own music player - measured each time rather than assumed, and above the strip a
- * music app may draw near the foot of the screen.
+ * It shows only while the phone is locked with the screen on, the PIN pad is not up, and no call
+ * is ringing or live. It sits under the lowest thing the lock screen itself shows in its upper
+ * half - the date, or the charging line, or Mudita's own music player - measured each time
+ * rather than assumed, and above the strip a music app may draw near the foot of the screen.
+ * Katapult's own lock-screen widgets, when they are drawn, are made room for in the same way.
  */
 class LockscreenPanel(private val service: AccessibilityService) :
     LifecycleOwner, ViewModelStoreOwner, SavedStateRegistryOwner {
@@ -76,6 +76,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private var reading: Job? = null
     private var overlay: ComposeView? = null
     private var overlayTop = -1
+    private var overlayRoom = -1
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -176,7 +177,6 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val show = locked &&
             interactive &&
             (sections.value.isNotEmpty() || notices.value.isNotEmpty()) &&
-            !katapultDrawing() &&
             !inCall() &&
             !covered &&
             !pinShowing()
@@ -210,9 +210,34 @@ class LockscreenPanel(private val service: AccessibilityService) :
             return
         }
         if (bottom != null) sawLockScreen = true
-        val top = bottom?.let { it + (GAP_DP * density).toInt() }
-            ?: (FALLBACK_TOP_DP * density).toInt()
-        if (overlay != null && top == overlayTop) return
+        val gap = (GAP_DP * density).toInt()
+        val screen = service.resources.displayMetrics.heightPixels
+        var top = bottom?.let { it + gap } ?: (FALLBACK_TOP_DP * density).toInt()
+        val floor = screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
+        // Katapult's widgets are made room for. One in the upper part (its music player) is sat
+        // under, like the lock screen's own items. One lower down (its notifications, which can
+        // be dragged anywhere) splits what is left in two, and the panel takes the first part
+        // it fits in whole. Where it fits in neither, it does not show: a panel over Katapult's
+        // is worse than none, and moving Katapult's widget makes room.
+        val katapult = katapultBounds()
+        katapult.filter { it.top < screen * UPPER_PART }.forEach { top = maxOf(top, it.bottom + gap) }
+        val gaps = mutableListOf<Pair<Int, Int>>()
+        var from = top
+        katapult.filter { it.top >= screen * UPPER_PART }.sortedBy { it.top }.forEach {
+            gaps += from to minOf(it.top - gap, floor)
+            from = maxOf(from, it.bottom + gap)
+        }
+        gaps += from to floor
+        val least = leastDp(sections.value, notices.value)
+        val fits = gaps.firstOrNull { (a, b) -> (b - a) / density >= least }
+        if (fits == null) {
+            if (overlay != null) Log.i(TAG, "no room beside Katapult's widgets: down")
+            remove()
+            return
+        }
+        top = fits.first
+        val room = ((fits.second - top) / density).toInt()
+        if (overlay != null && top == overlayTop && room == overlayRoom) return
         val now = SystemClock.uptimeMillis()
         // ⚠ Never moved while it is up. The lock screen rearranges itself as it goes away, and
         // a panel that followed it was taken down and put up again as a new window at the
@@ -220,7 +245,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // panel seen to linger. So a change of place takes it down, and it comes back only once
         // the lock screen has held still; if the change was an unlock, it does not come back.
         if (overlay != null) {
-            Log.i(TAG, "moved $overlayTop -> $top: down until it settles")
+            Log.i(TAG, "moved $overlayTop/$overlayRoom -> $top/$room: down until it settles")
             remove()
             settleUntil = now + SETTLE_MS
             settleTop = top
@@ -234,10 +259,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             }
             return
         }
-        Log.i(TAG, "show at $top")
-        val screen = service.resources.displayMetrics.heightPixels
-        val floor = screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
-        val room = ((floor - top) / density).toInt().coerceAtLeast(0)
+        Log.i(TAG, "show at $top, room $room")
         val view = ComposeView(service).apply {
             setViewTreeLifecycleOwner(this@LockscreenPanel)
             setViewTreeViewModelStoreOwner(this@LockscreenPanel)
@@ -272,6 +294,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             service.getSystemService(WindowManager::class.java).addView(view, params)
             overlay = view
             overlayTop = top
+            overlayRoom = room
         } catch (_: Exception) {
             overlay = null
         }
@@ -313,6 +336,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
         overlay = null
         overlayTop = -1
+        overlayRoom = -1
     }
 
     /** Unlock, then open the app whose lines were pressed. */
@@ -353,12 +377,19 @@ class LockscreenPanel(private val service: AccessibilityService) :
         null
     }
 
-    /** Katapult draws lock-screen widgets of its own; two panels would stack. */
-    private fun katapultDrawing(): Boolean {
-        val enabled = Settings.Secure.getString(
-            service.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
-        ) ?: return false
-        return enabled.split(':').any { it.startsWith("$KATAPULT/") }
+    /**
+     * Where Katapult's lock-screen widgets are, while it is drawing them. Looked at rather than
+     * inferred from its service being on: that one service also locks the phone on a double tap,
+     * covers the status-bar clock and runs the screensaver, and its widgets are off by default.
+     */
+    private fun katapultBounds(): List<Rect> = try {
+        service.windows
+            .filter { it.type == AccessibilityWindowInfo.TYPE_ACCESSIBILITY_OVERLAY }
+            .filter { it.root?.packageName == KATAPULT }
+            .map { w -> Rect().also { w.getBoundsInScreen(it) } }
+            .filter { it.height() > 0 && it.top > STATUS_BAR_PX }
+    } catch (_: Exception) {
+        emptyList()
     }
 
     /**

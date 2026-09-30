@@ -279,3 +279,22 @@ private fun fit(stacked: List<Glance.Section>, footDp: Int, roomDp: Int): List<G
     val more = stringResource(R.string.panel_more).format(all - shown)
     return listOf(first.copy(lines = first.lines.take(shown) + Glance.Line(null, more, false))) + rest
 }
+
+/**
+ * The least height, in dp, the panel can be drawn in: today's events cut to their first line and
+ * "+N more", as [fit] leaves them, and everything else whole. Other apps' notifications are
+ * counted at the most lines they can take, since how they pack is known only once measured.
+ */
+internal fun leastDp(sections: List<Glance.Section>, notices: List<Notices.Notice>): Int {
+    val stacked = sections.filter { it.packageName !in Glance.COUNTS }
+    val counts = sections.any { it.packageName in Glance.COUNTS }
+    val withText = notices.any { it.text != null }
+    val shown = if (withText) notices.size else notices.count { it.counted }
+    val noticeLines = minOf(shown, if (withText) TEXT_ROWS else NOTICE_ROWS)
+    val foot = if (!counts && noticeLines == 0) 0
+        else RULE_DP + PAD_DP + (if (counts) LINE_DP else 0) + noticeLines * LINE_DP
+    return stacked.withIndex().sumOf { (i, it) ->
+        val lines = if (i == 0) minOf(it.lines.size, 2) else it.lines.size
+        RULE_DP + PAD_DP + (if (it.heading != null) HEADING_DP else 0) + lines * LINE_DP
+    } + foot + RULE_DP
+}
