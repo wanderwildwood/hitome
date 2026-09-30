@@ -26,15 +26,17 @@ object Glance {
         "com.wanderwildwood.soramoyo",
     )
 
-    /**
-     * Counts that share one line at the foot: unread messages, then unread mail. These two say
-     * what is unread themselves, so they are never among the apps whose notifications are
-     * counted (see [Notices]), which would show them twice.
-     */
+    /** Counts that share one line at the foot: unread messages, then unread mail. */
     val COUNTS = listOf(
         "com.wanderwildwood.kotozute",
         "com.wanderwildwood.tayori",
     )
+
+    /**
+     * Every app that hands Glance its own lines. None of them is among the apps whose
+     * notifications are counted (see [Notices]): each already has its place on the panel.
+     */
+    val SOURCES = STACKED + COUNTS
 
     fun uri(packageName: String): Uri = Uri.parse("content://$packageName.glance/lines")
 

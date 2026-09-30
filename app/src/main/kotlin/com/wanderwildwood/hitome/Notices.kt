@@ -104,7 +104,7 @@ class NoticeListener : NotificationListenerService() {
         val newest = mutableMapOf<String, android.service.notification.StatusBarNotification>()
         val counts = mutableMapOf<String, Int>()
         active.forEach { sbn ->
-            if (sbn.packageName !in chosen || sbn.packageName in Glance.COUNTS) return@forEach
+            if (sbn.packageName !in chosen || sbn.packageName in Glance.SOURCES) return@forEach
             val n = sbn.notification
             if (sbn.isOngoing) return@forEach
             if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return@forEach

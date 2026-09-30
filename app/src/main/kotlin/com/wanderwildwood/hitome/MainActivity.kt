@@ -175,7 +175,8 @@ private fun Row(title: String, value: String?, onClick: () -> Unit) {
 
 /**
  * Every app with a place in the launcher, to choose which have their notifications counted.
- * Messaging and Email are left out: they have their own line. Glance too, which posts nothing.
+ * Calendar, Sky, Messaging and Email are left out: they have their own place on the panel.
+ * Glance too, which posts nothing.
  */
 @Composable
 private fun ChooseAppsScreen(onBack: () -> Unit) {
@@ -186,7 +187,7 @@ private fun ChooseAppsScreen(onBack: () -> Unit) {
         pm.queryIntentActivities(launcher, 0)
             .map { it.activityInfo.applicationInfo }
             .distinctBy { it.packageName }
-            .filter { it.packageName != context.packageName && it.packageName !in Glance.COUNTS }
+            .filter { it.packageName != context.packageName && it.packageName !in Glance.SOURCES }
             .map { it.packageName to pm.getApplicationLabel(it).toString() }
             .sortedBy { it.second.lowercase() }
     }

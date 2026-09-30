@@ -23,8 +23,8 @@ and sends nothing anywhere.
   hide a notification's content on the lock screen - the phone set to hide private content, and
   the notification or its channel marked private - Glance shows its public version or nothing
   but the count. Left uncounted: ongoing ones (a player, a download), a
-  group's summary, and anything the app or you have marked secret on the lock screen. Messaging
-  and Email are never counted this way; they have their own line. The code is
+  group's summary, and anything the app or you have marked secret on the lock screen. Calendar,
+  Sky, Messaging and Email are never counted this way; they have their own place on the panel. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
 
 ## What anyone can see
