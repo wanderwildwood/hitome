@@ -77,6 +77,10 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private var overlay: ComposeView? = null
     private var overlayTop = -1
     private var overlayRoom = -1
+    private var overlayTrimmed = false
+
+    /** Whether only the part chosen to keep is drawn, there being no room for everything. */
+    private val trimmed = mutableStateOf(false)
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -214,30 +218,40 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val screen = service.resources.displayMetrics.heightPixels
         var top = bottom?.let { it + gap } ?: (FALLBACK_TOP_DP * density).toInt()
         val floor = screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
-        // Katapult's widgets are made room for. One in the upper part (its music player) is sat
-        // under, like the lock screen's own items. One lower down (its notifications, which can
-        // be dragged anywhere) splits what is left in two, and the panel takes the first part
-        // it fits in whole. Where it fits in neither, it does not show: a panel over Katapult's
-        // is worse than none, and moving Katapult's widget makes room.
-        val katapult = katapultBounds()
-        katapult.filter { it.top < screen * UPPER_PART }.forEach { top = maxOf(top, it.bottom + gap) }
+        // Katapult's widgets are made room for: its music player and its notifications, which
+        // can be dragged anywhere. They split the room between the lock screen's items and the
+        // music strip into parts, and the panel takes the first part it fits in whole: all of
+        // it if it can, or else only the part chosen to keep. Where even that fits nowhere, it
+        // does not show: a panel over Katapult's is worse than none, and moving Katapult's
+        // widget makes room.
+        val katapult = katapultBounds().sortedBy { it.top }
         val gaps = mutableListOf<Pair<Int, Int>>()
         var from = top
-        katapult.filter { it.top >= screen * UPPER_PART }.sortedBy { it.top }.forEach {
-            gaps += from to minOf(it.top - gap, floor)
+        katapult.forEach {
+            val to = minOf(it.top - gap, floor)
+            if (to > from) gaps += from to to
             from = maxOf(from, it.bottom + gap)
         }
-        gaps += from to floor
-        val least = leastDp(sections.value, notices.value)
-        val fits = gaps.firstOrNull { (a, b) -> (b - a) / density >= least }
+        if (floor > from || katapult.isEmpty()) gaps += from to floor
+        val whole = leastDp(sections.value, notices.value)
+        val part = leastDp(Glance.kept(sections.value, Glance.keep(service)), emptyList())
+        fun fitting(least: Int) = gaps.firstOrNull { (a, b) -> (b - a) / density >= least }
+        // Without Katapult's widgets the panel takes what room there is and never hides: on a
+        // tight lock screen (Mudita's music player, a charging line) it keeps one part.
+        val (fits, trim) = when {
+            fitting(whole) != null -> fitting(whole) to false
+            fitting(part) != null -> fitting(part) to true
+            katapult.isEmpty() -> gaps.single() to true
+            else -> null to true
+        }
         if (fits == null) {
             if (overlay != null) Log.i(TAG, "no room beside Katapult's widgets: down")
             remove()
             return
         }
         top = fits.first
-        val room = ((fits.second - top) / density).toInt()
-        if (overlay != null && top == overlayTop && room == overlayRoom) return
+        val room = ((fits.second - top) / density).toInt().coerceAtLeast(0)
+        if (overlay != null && top == overlayTop && room == overlayRoom && trim == overlayTrimmed) return
         val now = SystemClock.uptimeMillis()
         // ⚠ Never moved while it is up. The lock screen rearranges itself as it goes away, and
         // a panel that followed it was taken down and put up again as a new window at the
@@ -246,6 +260,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // the lock screen has held still; if the change was an unlock, it does not come back.
         if (overlay != null) {
             Log.i(TAG, "moved $overlayTop/$overlayRoom -> $top/$room: down until it settles")
+            trimmed.value = trim
             remove()
             settleUntil = now + SETTLE_MS
             settleTop = top
@@ -259,15 +274,16 @@ class LockscreenPanel(private val service: AccessibilityService) :
             }
             return
         }
-        Log.i(TAG, "show at $top, room $room")
+        Log.i(TAG, "show at $top, room $room" + if (trim) ", one part" else "")
+        trimmed.value = trim
         val view = ComposeView(service).apply {
             setViewTreeLifecycleOwner(this@LockscreenPanel)
             setViewTreeViewModelStoreOwner(this@LockscreenPanel)
             setViewTreeSavedStateRegistryOwner(this@LockscreenPanel)
             setContent {
                 GlancePanel(
-                    sections = sections.value,
-                    notices = notices.value,
+                    sections = if (trimmed.value) Glance.kept(sections.value, Glance.keep(service)) else sections.value,
+                    notices = if (trimmed.value) emptyList() else notices.value,
                     roomDp = room,
                     onOpen = { pkg -> open(pkg) },
                 )
@@ -295,6 +311,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             overlay = view
             overlayTop = top
             overlayRoom = room
+            overlayTrimmed = trim
         } catch (_: Exception) {
             overlay = null
         }

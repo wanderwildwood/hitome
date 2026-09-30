@@ -43,6 +43,40 @@ object Glance {
     /** Calendar (koyomi), whose own lines take the place of Glance's reading of today. */
     const val CALENDAR = "com.wanderwildwood.koyomi"
 
+    const val SKY = "com.wanderwildwood.soramoyo"
+
+    /** What is kept when there is not room for everything: today's events, the weather, or the counts. */
+    enum class Keep { TODAY, WEATHER, COUNTS }
+
+    private const val PREFS = "panel"
+    private const val KEY_KEEP = "keep"
+
+    fun keep(context: Context): Keep = try {
+        Keep.valueOf(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(KEY_KEEP, null) ?: "")
+    } catch (_: IllegalArgumentException) {
+        Keep.TODAY
+    }
+
+    fun setKeep(context: Context, keep: Keep) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(KEY_KEEP, keep.name).apply()
+    }
+
+    /**
+     * The one part of [sections] that [keep] names. Today's events are whichever section is
+     * neither the weather nor a count, since without Calendar they come under the calendar app
+     * they open. When that part has nothing to say, the first section there is stands in.
+     */
+    fun kept(sections: List<Section>, keep: Keep): List<Section> {
+        val part = sections.filter {
+            when (keep) {
+                Keep.TODAY -> it.packageName != SKY && it.packageName !in COUNTS
+                Keep.WEATHER -> it.packageName == SKY
+                Keep.COUNTS -> it.packageName in COUNTS
+            }
+        }
+        return part.ifEmpty { sections.take(1) }
+    }
+
     /**
      * Everything the panel draws but other apps' notifications, in its order. Today's events
      * are Calendar's own while it is installed, and otherwise Glance's reading ([Today]).

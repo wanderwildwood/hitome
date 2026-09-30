@@ -43,9 +43,12 @@ It measures where the lock screen's own items end - the date, the charging line,
 player - and starts below the lowest, each time the screen wakes. It stops above the strip Music
 Box and Audio Reading draw near the foot of the screen, and above the padlock.
 
+When there is not room for all of it, it keeps one part: today's events unless you choose the
+weather or what is unread instead (**When there is not room for all of it**, in Glance).
+
 It works with Mudita's own launcher, with inkOS, and with Katapult. When Katapult draws its own
-lock-screen widgets, Glance makes room for them: it sits under Katapult's music player and stops
-above its notifications.
+lock-screen widgets, Glance fits around them, above or below, wherever it fits whole. If it fits
+nowhere, it does not show; dragging Katapult's notifications lower makes room.
 
 ## Turning it on
 

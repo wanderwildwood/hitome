@@ -82,6 +82,7 @@ private fun MainScreen() {
     var showText by remember { mutableStateOf(Notices.showText(context)) }
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
+    var keep by remember { mutableStateOf(Glance.keep(context)) }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -182,6 +183,22 @@ private fun MainScreen() {
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 10.dp),
                 )
+            }
+            item {
+                // Pressed, it moves on to the next part, the way round the panel draws them.
+                Row(
+                    title = stringResource(R.string.keep_title),
+                    value = stringResource(
+                        when (keep) {
+                            Glance.Keep.TODAY -> R.string.keep_today
+                            Glance.Keep.WEATHER -> R.string.keep_weather
+                            Glance.Keep.COUNTS -> R.string.keep_counts
+                        },
+                    ),
+                ) {
+                    keep = Glance.Keep.entries[(keep.ordinal + 1) % Glance.Keep.entries.size]
+                    Glance.setKeep(context, keep)
+                }
             }
             item {
                 TextMMD(

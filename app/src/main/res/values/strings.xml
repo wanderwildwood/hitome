@@ -32,6 +32,10 @@
     <!-- An event under way since before today: "until 11:00" -->
     <string name="today_until">until %1$s</string>
     <string name="today_untitled">(No title)</string>
+    <string name="keep_title">When there is not room for all of it</string>
+    <string name="keep_today">Keep today\'s events</string>
+    <string name="keep_weather">Keep the weather</string>
+    <string name="keep_counts">Keep what is unread</string>
     <string name="sources_note">Each is switched on or off in that app\'s own settings.</string>
     <string name="others_heading">Other apps</string>
     <string name="access_off">Notifications are not counted</string>
