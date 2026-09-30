@@ -15,6 +15,23 @@
     <string name="source_messaging">Messaging: unread</string>
     <string name="source_email">Email: unread</string>
     <string name="source_missing">Not installed</string>
+    <!-- Without Calendar installed: Glance reads today's events itself -->
+    <string name="today_switch">Today\'s events</string>
+    <string name="today_note_mudita_off">From Mudita\'s Calendar, and the phone\'s other calendars if you allow it.</string>
+    <string name="today_note_mudita">From Mudita\'s Calendar. Press to add the phone\'s other calendars.</string>
+    <string name="today_note_all">From Mudita\'s Calendar and the phone\'s other calendars.</string>
+    <string name="today_note_shared">From the phone\'s calendars.</string>
+    <string name="today_note_none">Needs calendar access to read the phone\'s calendars. Press to allow it.</string>
+    <string name="preview">Preview</string>
+    <string name="preview_note">What the lock screen would show now</string>
+    <string name="preview_empty">Nothing to show now. The panel stays off the lock screen until there is.</string>
+    <string name="preview_off">The panel is off, so the lock screen shows none of this until it is turned on in Accessibility.</string>
+    <!-- Today\'s events, read by Glance itself -->
+    <string name="today_heading">Today</string>
+    <string name="today_all_day">All day</string>
+    <!-- An event under way since before today: "until 11:00" -->
+    <string name="today_until">until %1$s</string>
+    <string name="today_untitled">(No title)</string>
     <string name="sources_note">Each is switched on or off in that app\'s own settings.</string>
     <string name="others_heading">Other apps</string>
     <string name="access_off">Notifications are not counted</string>
@@ -36,13 +53,13 @@
 
     <!-- The accessibility service, as Android's Accessibility settings show it -->
     <string name="service_label">Glance on the lock screen</string>
-    <string name="service_description">Shows today\'s events, the weather and what is unread on the lock screen, from Calendar, Sky, Messaging and Email, and how many notifications the apps you choose have waiting. It reads the lock screen only to see where its own items end and whether the PIN pad is up, and it has no network access.</string>
+    <string name="service_description">Shows today\'s events, the weather and what is unread on the lock screen, from Calendar, Sky, Messaging and Email, and how many notifications the apps you choose have waiting. Without Calendar, it can read today\'s events itself if you turn that on. It reads the lock screen only to see where its own items end and whether the PIN pad is up, and it has no network access.</string>
     <!-- Android's notification access list -->
     <string name="listener_label">Glance: count notifications</string>
 
     <!-- About dialog. Keep the names of the app, people, projects and licences as they are -->
     <string name="about_title">Glance %1$s</string>
-    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. With notification access on, it counts the notifications of the apps you choose, and reads what they say only if you turn that on. It has no network access.</string>
+    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. With notification access on, it counts the notifications of the apps you choose, and reads what they say only if you turn that on. Without Calendar, it reads today\'s events from Mudita\'s Calendar and, with calendar access, the phone\'s other calendars, only if you turn that on. It has no network access.</string>
     <string name="about_after">The lock-screen overlay follows Katapult by gezimos, GPL 3.0.</string>
     <!-- The name of the app's licence -->
     <string name="about_licence">GNU General Public License v3</string>

@@ -40,6 +40,20 @@ object Glance {
 
     fun uri(packageName: String): Uri = Uri.parse("content://$packageName.glance/lines")
 
+    /** Calendar (koyomi), whose own lines take the place of Glance's reading of today. */
+    const val CALENDAR = "com.wanderwildwood.koyomi"
+
+    /**
+     * Everything the panel draws but other apps' notifications, in its order. Today's events
+     * are Calendar's own while it is installed, and otherwise Glance's reading ([Today]).
+     */
+    fun readAll(context: Context): List<Section> {
+        val calendarInstalled = context.packageManager.getLaunchIntentForPackage(CALENDAR) != null
+        return (STACKED + COUNTS).mapNotNull { pkg ->
+            if (pkg == CALENDAR && !calendarInstalled) Today.read(context) else read(context, pkg)
+        }
+    }
+
     /** Null when the app is not installed, has nothing to say, or has its switch off. */
     fun read(context: Context, packageName: String): Section? = try {
         context.contentResolver.query(uri(packageName), COLUMNS, null, null, null)?.use { c ->

@@ -1,8 +1,8 @@
 # Privacy
 
 Glance shows on the lock screen what four apps on the phone hand it and, if you turn it on, how
-many notifications the apps you choose have waiting. It has no network access, no permissions,
-and sends nothing anywhere.
+many notifications the apps you choose have waiting. On a phone without Calendar it can read
+today's events itself, if you turn that on. It has no network access and sends nothing anywhere.
 
 ## What it reads
 
@@ -10,6 +10,13 @@ and sends nothing anywhere.
   that answers Glance alone. Today's event titles and times, the weather, and two unread
   counts - never a message, a sender or a subject. Each app hands over nothing while its own
   lock-screen switch is off.
+- **Today's events, without Calendar - only if you turn it on.** On a phone without
+  [Calendar](https://github.com/wanderwildwood/koyomi), **Today's events** (off until you turn it
+  on) reads what is left of today, titles and times only. From Mudita's own Calendar, which
+  answers any app that asks, so this needs no permission. And from the phone's other calendars
+  (DAVx5, Etar, anything that syncs), which need calendar access: Glance asks for it when you
+  turn the switch on, and you can refuse and keep Mudita's alone. It reads only today, and only
+  calendars set to be shown. The code is `app/src/main/kotlin/com/wanderwildwood/hitome/Today.kt`.
 - **The lock screen itself**, through the accessibility service: only where its own items end,
   so the panel can sit under them, and whether the PIN pad is up, so the panel can stand aside.
   The service listens to the system UI alone (`app/src/main/res/xml/glance_service.xml`) and
@@ -37,7 +44,8 @@ asks for the phone's lock before opening anything, so a PIN still protects what 
 
 ## What it stores
 
-The list of apps you chose and whether to show what they say, and nothing else: no history and no copy of what it shows.
+The list of apps you chose, whether to show what they say, and whether to read today's events,
+and nothing else: no history and no copy of what it shows.
 
 ## Checking for yourself
 
@@ -45,8 +53,10 @@ The list of apps you chose and whether to show what they say, and nothing else: 
 aapt2 dump badging hitome.apk | grep uses-permission
 ```
 
-prints one line, `com.wanderwildwood.hitome.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION`. That is
-not a permission over anything on the phone: AndroidX declares it inside every app built against
-it, so that the app's own internal broadcasts cannot be sent by anyone else, and it names Glance
-itself. Glance asks for no permission of the phone. Notification access is not a permission an
-app asks for either; it is a switch in Android's settings that you turn on or leave off.
+prints two lines. `android.permission.READ_CALENDAR` is calendar access, asked for only when you
+turn on **Today's events** on a phone without Calendar, and never otherwise.
+`com.wanderwildwood.hitome.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` is not a permission over
+anything on the phone: AndroidX declares it inside every app built against it, so that the app's
+own internal broadcasts cannot be sent by anyone else, and it names Glance itself. Notification
+access is not a permission an app asks for; it is a switch in Android's settings that you turn on
+or leave off.

@@ -16,7 +16,9 @@ A panel under the clock and date, in the lock screen's own dotted rules:
 
 - **Today**, from [Calendar](https://github.com/wanderwildwood/koyomi): all-day events first,
   then what is still to come, with times. When there is not room for them all, it shows the
-  first and how many more.
+  first and how many more. Without Calendar, turn on **Today's events** in Glance and it reads
+  today itself: from Mudita's own Calendar, and from the phone's other calendars if you allow
+  calendar access.
 - **The weather**, from [Sky](https://github.com/wanderwildwood/soramoyo): the temperature
   now, the day's high and low, and a line when rain or snow is likely soon.
 - **Unread**, from [Messaging](https://github.com/wanderwildwood/kotozute) and
@@ -50,7 +52,9 @@ widgets of its own, so while Katapult's are on, Glance stands aside.
 2. Open Glance and press **The panel is off**: it opens Android's Accessibility settings. Turn on
    **Glance on the lock screen**.
 
-3. For other apps: press **Notifications are not counted**, turn on notification access for
+3. **Preview** shows what the lock screen would show now, so each switch can be tried without
+   locking the phone.
+4. For other apps: press **Notifications are not counted**, turn on notification access for
    Glance, then **Choose apps**. Nothing is counted until you choose at least one.
 
 An overlay above the lock screen is a window only an accessibility service is allowed to add,

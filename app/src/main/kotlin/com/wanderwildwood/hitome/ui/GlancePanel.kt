@@ -55,7 +55,9 @@ fun GlancePanel(
     onOpen: (String) -> Unit,
 ) {
     ThemeMMD(colorScheme = monochrome) {
-        val stacked = sections.filter { it.packageName in Glance.STACKED }
+        // Everything but the counts is stacked; today's events may come from Glance's own
+        // reading, under the calendar app it opens rather than one of the four.
+        val stacked = sections.filter { it.packageName !in Glance.COUNTS }
         val counts = sections.filter { it.packageName in Glance.COUNTS }
         // With the words shown, each app has a line of its own; without, the names share lines.
         val withText = notices.any { it.text != null }

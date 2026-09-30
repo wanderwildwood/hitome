@@ -110,9 +110,9 @@ class LockscreenPanel(private val service: AccessibilityService) :
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
         })
-        (Glance.STACKED + Glance.COUNTS).forEach { pkg ->
+        ((Glance.STACKED + Glance.COUNTS).map { Glance.uri(it) } + Today.watched(service)).forEach { uri ->
             try {
-                service.contentResolver.registerContentObserver(Glance.uri(pkg), true, changes)
+                service.contentResolver.registerContentObserver(uri, true, changes)
             } catch (_: Exception) {}
         }
         scope?.launch {
@@ -140,7 +140,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         reading?.cancel()
         reading = s.launch {
             sections.value = withContext(Dispatchers.IO) {
-                (Glance.STACKED + Glance.COUNTS).mapNotNull { Glance.read(service, it) }
+                Glance.readAll(service)
             }
             evaluate()
         }

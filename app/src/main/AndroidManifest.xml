@@ -8,13 +8,24 @@
 
       Counting other apps' notifications is a second switch, off until the owner turns on
       notification access for it, and counts only the apps they choose in Glance.
+
+      Calendar access is asked for only when the owner turns on today's events on a phone without
+      Calendar, to read the phone's shared calendars; Mudita's own Calendar needs none.
     -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <queries>
         <package android:name="com.wanderwildwood.koyomi" />
         <package android:name="com.wanderwildwood.soramoyo" />
         <package android:name="com.wanderwildwood.kotozute" />
         <package android:name="com.wanderwildwood.tayori" />
+        <package android:name="com.mudita.calendar" />
+        <provider android:authorities="com.mudita.calendar" />
+        <!-- Whatever app is the calendar, to open when today's events are pressed. -->
+        <intent>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.APP_CALENDAR" />
+        </intent>
         <!-- The apps there are to choose from, for counting their notifications. -->
         <intent>
             <action android:name="android.intent.action.MAIN" />

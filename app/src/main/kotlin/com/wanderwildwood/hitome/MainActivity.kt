@@ -6,6 +6,9 @@ import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Box
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -19,6 +22,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -37,8 +42,12 @@ import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.hitome.ui.AboutDialog
 import com.wanderwildwood.hitome.ui.BarButton
+import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.Icons
 import com.wanderwildwood.hitome.ui.monochrome
+import com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,6 +66,7 @@ private fun MainScreen() {
     val context = LocalContext.current
     var aboutOpen by remember { mutableStateOf(false) }
     var choosing by remember { mutableStateOf(false) }
+    var previewing by remember { mutableStateOf(false) }
     // Re-read on every return, which is usually from the accessibility settings.
     var checks by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
@@ -71,9 +81,29 @@ private fun MainScreen() {
     val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
     var showText by remember { mutableStateOf(Notices.showText(context)) }
 
+    var todayOn by remember { mutableStateOf(Today.enabled(context)) }
+    val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
+    val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
+    val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        checks++
+        // Refused for good: only Android's own page for Glance can allow it now.
+        if (!granted && context is ComponentActivity &&
+            !context.shouldShowRequestPermissionRationale(android.Manifest.permission.READ_CALENDAR)
+        ) {
+            context.startActivity(
+                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", context.packageName, null)),
+            )
+        }
+    }
+
     if (choosing) {
         BackHandler { choosing = false }
         ChooseAppsScreen { choosing = false }
+        return
+    }
+    if (previewing) {
+        BackHandler { previewing = false }
+        PreviewScreen(serviceOn) { previewing = false }
         return
     }
 
@@ -97,6 +127,12 @@ private fun MainScreen() {
                 }
             }
             item {
+                Row(
+                    title = stringResource(R.string.preview),
+                    value = stringResource(R.string.preview_note),
+                ) { previewing = true }
+            }
+            item {
                 TextMMD(
                     text = stringResource(R.string.sources_heading),
                     style = MaterialTheme.typography.labelSmall,
@@ -106,6 +142,32 @@ private fun MainScreen() {
             SOURCES.forEach { (pkg, label) ->
                 item(key = pkg) {
                     val here = installed[pkg] == true
+                    // Without Calendar, Glance reads today's events itself, if asked to.
+                    if (pkg == Glance.CALENDAR && !here) {
+                        SwitchRow(
+                            title = stringResource(R.string.today_switch),
+                            note = stringResource(
+                                when {
+                                    muditaCalendar && calendarAccess -> R.string.today_note_all
+                                    muditaCalendar && todayOn -> R.string.today_note_mudita
+                                    muditaCalendar -> R.string.today_note_mudita_off
+                                    calendarAccess -> R.string.today_note_shared
+                                    else -> R.string.today_note_none
+                                },
+                            ),
+                            checked = todayOn,
+                        ) {
+                            // With it on, a press on a row still missing the other calendars asks for them.
+                            if (todayOn && !calendarAccess) {
+                                askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
+                                return@SwitchRow
+                            }
+                            todayOn = !todayOn
+                            Today.setEnabled(context, todayOn)
+                            if (todayOn && !calendarAccess) askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
+                        }
+                        return@item
+                    }
                     Row(
                         title = stringResource(label),
                         value = if (here) null else stringResource(R.string.source_missing),
@@ -172,6 +234,52 @@ private fun Row(title: String, value: String?, onClick: () -> Unit) {
         if (value != null) TextMMD(text = value, style = MaterialTheme.typography.labelSmall)
     }
 }
+
+/**
+ * The panel as the lock screen would draw it now, from the same lines, so what each switch
+ * does can be seen without locking the phone. Pressing it does nothing here.
+ */
+@Composable
+private fun PreviewScreen(serviceOn: Boolean, onBack: () -> Unit) {
+    val context = LocalContext.current
+    var sections by remember { mutableStateOf<List<Glance.Section>?>(null) }
+    val notices by Notices.now.collectAsState()
+    LaunchedEffect(Unit) { sections = withContext(Dispatchers.IO) { Glance.readAll(context) } }
+
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            TopAppBarMMD(
+                title = { TextMMD(text = stringResource(R.string.preview)) },
+                navigationIcon = { BarButton(Icons.Back, stringResource(R.string.cd_back), onBack) },
+            )
+        },
+    ) { padding ->
+        Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            Spacer(Modifier.height(24.dp))
+            val shown = sections ?: return@Column
+            if (shown.isEmpty() && notices.isEmpty()) {
+                TextMMD(text = stringResource(R.string.preview_empty), style = MaterialTheme.typography.bodyMedium)
+            } else {
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                    Box(Modifier.width(PANEL_WIDTH_DP.dp)) {
+                        GlancePanel(sections = shown, notices = notices, roomDp = PREVIEW_ROOM_DP, onOpen = {})
+                    }
+                }
+            }
+            if (!serviceOn) {
+                TextMMD(
+                    text = stringResource(R.string.preview_off),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 24.dp),
+                )
+            }
+        }
+    }
+}
+
+/** Room given the preview: about what a lock screen with only a clock and date leaves. */
+private const val PREVIEW_ROOM_DP = 380
 
 /**
  * Every app with a place in the launcher, to choose which have their notifications counted.
