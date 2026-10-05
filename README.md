@@ -21,6 +21,8 @@ A panel under the clock and date, in the lock screen's own dotted rules:
   calendar access.
 - **The weather**, from [Sky](https://github.com/wanderwildwood/soramoyo): the temperature
   now, the day's high and low, and a line when rain or snow is likely soon.
+- **Pinned notes**, from [Notes](https://github.com/wanderwildwood/oboegaki): each by its title,
+  and a list with how much of it is left, "Groceries · 3 to do".
 - **Unread**, from [Messaging](https://github.com/wanderwildwood/kotozute) and
   [Email](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
   nothing is unread.
