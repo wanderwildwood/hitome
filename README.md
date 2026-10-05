@@ -23,6 +23,10 @@ A panel under the clock and date, in the lock screen's own dotted rules:
   now, the day's high and low, and a line when rain or snow is likely soon.
 - **Pinned notes**, from [Notes](https://github.com/wanderwildwood/oboegaki): each by its title,
   and a list with how much of it is left, "Groceries · 3 to do".
+- **What is playing**, from [Music Box](https://github.com/wanderwildwood/jimeikin) and
+  [Audio Reading](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
+  book and its chapter (or the time left in a book with no chapters), and whether it is paused.
+  Nothing once playback stops.
 - **Unread**, from [Messaging](https://github.com/wanderwildwood/kotozute) and
   [Email](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
   nothing is unread.
@@ -109,7 +113,7 @@ release APK builds **unsigned** and will not install anywhere; there is no fallb
 
 Any app can take part: a read-only provider at `<package>.glance/lines` with the columns
 `heading`, `lead`, `text` and `bold`, answering only `com.wanderwildwood.hitome`. The file the
-four apps share is `glance/GlanceProvider.kt` in any of them. Glance reads a fixed list of apps
+apps share is `glance/GlanceProvider.kt` in any of them. Glance reads a fixed list of apps
 today; ask, and another can be added.
 
 ## Credit

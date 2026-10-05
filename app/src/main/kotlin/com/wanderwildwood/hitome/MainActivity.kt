@@ -378,6 +378,8 @@ private val SOURCES = listOf(
     "com.wanderwildwood.koyomi" to R.string.source_calendar,
     "com.wanderwildwood.soramoyo" to R.string.source_sky,
     "com.wanderwildwood.oboegaki" to R.string.source_notes,
+    "com.wanderwildwood.jimeikin" to R.string.source_music,
+    "com.wanderwildwood.mimidoku" to R.string.source_audio_reading,
     "com.wanderwildwood.kotozute" to R.string.source_messaging,
     "com.wanderwildwood.tayori" to R.string.source_email,
 )

@@ -18,6 +18,8 @@
         <package android:name="com.wanderwildwood.koyomi" />
         <package android:name="com.wanderwildwood.soramoyo" />
         <package android:name="com.wanderwildwood.oboegaki" />
+        <package android:name="com.wanderwildwood.jimeikin" />
+        <package android:name="com.wanderwildwood.mimidoku" />
         <package android:name="com.wanderwildwood.kotozute" />
         <package android:name="com.wanderwildwood.tayori" />
         <package android:name="com.mudita.calendar" />

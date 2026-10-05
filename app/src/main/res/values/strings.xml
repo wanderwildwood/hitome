@@ -13,6 +13,8 @@
     <string name="source_calendar">Calendar: today\'s events</string>
     <string name="source_sky">Sky: the weather</string>
     <string name="source_notes">Notes: pinned notes</string>
+    <string name="source_music">Music Box: what is playing</string>
+    <string name="source_audio_reading">Audio Reading: the book being read</string>
     <string name="source_messaging">Messaging: unread</string>
     <string name="source_email">Email: unread</string>
     <string name="source_missing">Not installed</string>
