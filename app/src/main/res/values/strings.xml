@@ -12,6 +12,7 @@
     <string name="sources_heading">What it shows</string>
     <string name="source_calendar">Calendar: today\'s events</string>
     <string name="source_sky">Sky: the weather</string>
+    <string name="source_notes">Notes: pinned notes</string>
     <string name="source_messaging">Messaging: unread</string>
     <string name="source_email">Email: unread</string>
     <string name="source_missing">Not installed</string>

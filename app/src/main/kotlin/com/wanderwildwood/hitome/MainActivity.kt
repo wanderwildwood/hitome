@@ -377,6 +377,7 @@ private fun openNotificationAccess(context: android.content.Context) {
 private val SOURCES = listOf(
     "com.wanderwildwood.koyomi" to R.string.source_calendar,
     "com.wanderwildwood.soramoyo" to R.string.source_sky,
+    "com.wanderwildwood.oboegaki" to R.string.source_notes,
     "com.wanderwildwood.kotozute" to R.string.source_messaging,
     "com.wanderwildwood.tayori" to R.string.source_email,
 )

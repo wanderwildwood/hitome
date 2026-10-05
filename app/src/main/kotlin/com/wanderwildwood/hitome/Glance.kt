@@ -20,10 +20,11 @@ object Glance {
 
     data class Section(val packageName: String, val heading: String?, val lines: List<Line>)
 
-    /** Stacked sections, top to bottom: today's events, then the weather. */
+    /** Stacked sections, top to bottom: today's events, the weather, then pinned notes. */
     val STACKED = listOf(
         "com.wanderwildwood.koyomi",
         "com.wanderwildwood.soramoyo",
+        "com.wanderwildwood.oboegaki",
     )
 
     /** Counts that share one line at the foot: unread messages, then unread mail. */
