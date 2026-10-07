@@ -12,7 +12,8 @@ day can be seen without unlocking the phone.
 
 ## What it shows
 
-A panel under the clock and date, in the lock screen's own dotted rules:
+A panel under the clock and date, in the lock screen's own dotted rules, in this order until you
+change it:
 
 - **The emergency card**, from Field Kit, once its "Show on the lock screen" is on: the
   fields left ticked on the card, allergies and conditions in bold.
@@ -58,8 +59,10 @@ It measures where the lock screen's own items end - the date, the charging line,
 player - and starts below the lowest, each time the screen wakes. It stops above the strip Music
 Box and Audio Reading draw near the foot of the screen, and above the padlock.
 
-When there is not room for all of it, it keeps one part: today's events unless you choose the
-weather or what is unread instead (**When there is not room for all of it**, in Glance).
+The parts are drawn in the order they are listed under **What it shows** in Glance, which is
+the order above until you change it: hold a row and drag it, or hold and let go for **Move up**
+and **Move down**. Unread and other apps' counts move as one. When there is not room for all of
+it, the parts nearest the top are kept, and today's events give up lines before anything else.
 
 It works with Mudita's own launcher, with inkOS, and with Katapult. When Katapult draws its own
 lock-screen widgets, Glance fits around them, above or below, wherever it fits whole. If it fits

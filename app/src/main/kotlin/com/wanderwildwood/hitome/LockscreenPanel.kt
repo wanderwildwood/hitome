@@ -35,6 +35,7 @@ import androidx.savedstate.SavedStateRegistryController
 import androidx.savedstate.SavedStateRegistryOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.wanderwildwood.hitome.ui.GlancePanel
+import com.wanderwildwood.hitome.ui.firstDp
 import com.wanderwildwood.hitome.ui.leastDp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -78,9 +79,6 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private var overlayTop = -1
     private var overlayRoom = -1
     private var overlayTrimmed = false
-
-    /** Whether only the part chosen to keep is drawn, there being no room for everything. */
-    private val trimmed = mutableStateOf(false)
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -221,7 +219,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // Katapult's widgets are made room for: its music player and its notifications, which
         // can be dragged anywhere. They split the room between the lock screen's items and the
         // music strip into parts, and the panel takes the first part it fits in whole: all of
-        // it if it can, or else only the part chosen to keep. Where even that fits nowhere, it
+        // it if it can, or else as much as fits, the person's first part first ([Glance.order]).
+        // Where even the first part fits nowhere, it
         // does not show: a panel over Katapult's is worse than none, and moving Katapult's
         // widget makes room.
         val katapult = katapultBounds().sortedBy { it.top }
@@ -233,11 +232,12 @@ class LockscreenPanel(private val service: AccessibilityService) :
             from = maxOf(from, it.bottom + gap)
         }
         if (floor > from || katapult.isEmpty()) gaps += from to floor
-        val whole = leastDp(sections.value, notices.value)
-        val part = leastDp(Glance.kept(sections.value, Glance.keep(service)), emptyList())
+        val order = Glance.order(service)
+        val whole = leastDp(sections.value, notices.value, order)
+        val part = firstDp(sections.value, notices.value, order)
         fun fitting(least: Int) = gaps.firstOrNull { (a, b) -> (b - a) / density >= least }
         // Without Katapult's widgets the panel takes what room there is and never hides: on a
-        // tight lock screen (Mudita's music player, a charging line) it keeps one part.
+        // tight lock screen (Mudita's music player, a charging line) it keeps what fits, in order.
         val (fits, trim) = when {
             fitting(whole) != null -> fitting(whole) to false
             fitting(part) != null -> fitting(part) to true
@@ -260,7 +260,6 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // the lock screen has held still; if the change was an unlock, it does not come back.
         if (overlay != null) {
             Log.i(TAG, "moved $overlayTop/$overlayRoom -> $top/$room: down until it settles")
-            trimmed.value = trim
             remove()
             settleUntil = now + SETTLE_MS
             settleTop = top
@@ -274,16 +273,16 @@ class LockscreenPanel(private val service: AccessibilityService) :
             }
             return
         }
-        Log.i(TAG, "show at $top, room $room" + if (trim) ", one part" else "")
-        trimmed.value = trim
+        Log.i(TAG, "show at $top, room $room" + if (trim) ", not all of it" else "")
         val view = ComposeView(service).apply {
             setViewTreeLifecycleOwner(this@LockscreenPanel)
             setViewTreeViewModelStoreOwner(this@LockscreenPanel)
             setViewTreeSavedStateRegistryOwner(this@LockscreenPanel)
             setContent {
                 GlancePanel(
-                    sections = if (trimmed.value) Glance.kept(sections.value, Glance.keep(service)) else sections.value,
-                    notices = if (trimmed.value) emptyList() else notices.value,
+                    sections = sections.value,
+                    notices = notices.value,
+                    order = Glance.order(service),
                     roomDp = room,
                     onOpen = { pkg -> open(pkg) },
                 )

@@ -39,11 +39,12 @@
     <!-- An event under way since before today: "until 11:00" -->
     <string name="today_until">until %1$s</string>
     <string name="today_untitled">(No title)</string>
-    <string name="keep_title">When there is not room for all of it</string>
-    <string name="keep_today">Keep today\'s events</string>
-    <string name="keep_weather">Keep the weather</string>
-    <string name="keep_counts">Keep what is unread</string>
-    <string name="sources_note">Each is switched on or off in that app\'s own settings.</string>
+    <string name="sources_note">Each is switched on or off in that app\'s own settings. Hold one and drag it to change the order, or hold and let go to move it up or down. When there is not room for all of them, the ones at the top are shown.</string>
+    <string name="unread_together">These two and other apps\' counts move together.</string>
+    <!-- The title of the Move up / Move down menu for the Messaging and Email row -->
+    <string name="unread_title">What is unread</string>
+    <string name="move_up">Move up</string>
+    <string name="move_down">Move down</string>
     <string name="others_heading">Other apps</string>
     <string name="access_off">Notifications are not counted</string>
     <string name="access_off_note">Turn on notification access for Glance to count other apps\' notifications.</string>

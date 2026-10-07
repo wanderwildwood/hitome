@@ -10,6 +10,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Box
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +32,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.gestures.scrollBy
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import com.mudita.mmd.components.buttons.OutlinedButtonMMD
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -42,6 +55,8 @@ import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.hitome.ui.AboutDialog
 import com.wanderwildwood.hitome.ui.BarButton
+import com.wanderwildwood.hitome.ui.EInkDialog
+import com.wanderwildwood.hitome.ui.holdToMove
 import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.Icons
 import com.wanderwildwood.hitome.ui.monochrome
@@ -75,7 +90,7 @@ private fun MainScreen() {
     }
     val serviceOn = remember(checks) { serviceEnabled(context) }
     val installed = remember(checks) {
-        SOURCES.associate { (pkg, _) -> pkg to (context.packageManager.getLaunchIntentForPackage(pkg) != null) }
+        Glance.SOURCES.associateWith { context.packageManager.getLaunchIntentForPackage(it) != null }
     }
     val access = remember(checks) { Notices.accessGranted(context) }
     val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
@@ -83,7 +98,6 @@ private fun MainScreen() {
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
     var switchedOn by remember { mutableStateOf(Glance.OPT_IN.filter { Glance.switchedOn(context, it) }.toSet()) }
-    var keep by remember { mutableStateOf(Glance.keep(context)) }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -98,6 +112,119 @@ private fun MainScreen() {
         }
     }
 
+    var order by remember { mutableStateOf(Glance.order(context)) }
+    val list = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // Where the list is and the turn under way: read while carrying, never drawn from.
+    val listAt = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    val scrolling = remember { arrayOfNulls<Job>(1) }
+    var carrying by remember { mutableStateOf<String?>(null) }
+    var menuFor by remember { mutableStateOf<String?>(null) }
+    val rows = remember { mutableMapOf<String, LayoutCoordinates>() }
+    val moveUpLabel = stringResource(R.string.move_up)
+    val moveDownLabel = stringResource(R.string.move_down)
+
+    // A newer source without its app is not listed, and is stepped over when moving.
+    fun listed(key: String) = key !in Glance.OPT_IN || installed[key] == true
+
+    /** Moves [key] past the row the finger at [y] has crossed the middle of, one row at a time. */
+    fun carryTo(key: String, y: Float) {
+        val shown = order.filter { listed(it) }
+        val at = shown.indexOf(key)
+        fun middle(k: String?) = k?.let { rows[it] }?.takeIf { it.isAttached }?.boundsInWindow()?.center?.y
+        val below = shown.getOrNull(at + 1)
+        val above = shown.getOrNull(at - 1)
+        val next = when {
+            middle(below)?.let { y > it } == true -> below
+            middle(above)?.let { y < it } == true -> above
+            else -> null
+        }
+        if (next != null) {
+            // Moved above the row the list holds at its top: the list keeps that row where it
+            // is, so it is brought back down into sight.
+            val top = list.layoutInfo.visibleItemsInfo.firstOrNull()?.key
+            order = Glance.moved(order, order.indexOf(key), order.indexOf(next))
+            if (next == above && next == top) {
+                val height = rows[key]?.size?.height ?: 0
+                scope.launch { list.scrollBy(-height.toFloat()) }
+            }
+            return
+        }
+        // Held at the top or foot of the list: it turns a row on, one step per movement.
+        val bounds = listAt[0]?.takeIf { it.isAttached }?.boundsInWindow() ?: return
+        val edge = 48 * context.resources.displayMetrics.density
+        val by = when {
+            y < bounds.top + edge && list.canScrollBackward -> -1
+            y > bounds.bottom - edge && list.canScrollForward -> 1
+            else -> return
+        }
+        if (scrolling[0]?.isActive == true) return
+        val step = (rows[key]?.size?.height ?: 0).toFloat()
+        scrolling[0] = scope.launch { list.scrollBy(by * step) }
+    }
+
+    fun canStep(key: String, by: Int): Boolean {
+        val shown = order.filter { listed(it) }
+        return (shown.indexOf(key) + by) in shown.indices
+    }
+
+    /** Move up or down from the menu: past the next listed row, and saved at once. */
+    fun step(key: String, by: Int): Boolean {
+        if (!canStep(key, by)) return false
+        val shown = order.filter { listed(it) }
+        val next = shown[shown.indexOf(key) + by]
+        order = Glance.moved(order, order.indexOf(key), order.indexOf(next))
+        Glance.setOrder(context, order)
+        return true
+    }
+
+    @Composable
+    fun SourceRow(pkg: String, label: Int, actions: Modifier) {
+        val here = installed[pkg] == true
+        // The newer sources: not listed without their app, and off until switched on.
+        if (pkg in Glance.OPT_IN) {
+            val on = pkg in switchedOn
+            SwitchRow(title = stringResource(label), note = stringResource(R.string.source_own_switch), checked = on, modifier = actions) {
+                Glance.setSwitchedOn(context, pkg, !on)
+                switchedOn = if (on) switchedOn - pkg else switchedOn + pkg
+            }
+            return
+        }
+        // Without Calendar, Glance reads today's events itself, if asked to.
+        if (pkg == Glance.CALENDAR && !here) {
+            SwitchRow(
+                title = stringResource(R.string.today_switch),
+                note = stringResource(
+                    when {
+                        muditaCalendar && calendarAccess -> R.string.today_note_all
+                        muditaCalendar && todayOn -> R.string.today_note_mudita
+                        muditaCalendar -> R.string.today_note_mudita_off
+                        calendarAccess -> R.string.today_note_shared
+                        else -> R.string.today_note_none
+                    },
+                ),
+                checked = todayOn,
+                modifier = actions,
+            ) {
+                // With it on, a press on a row still missing the other calendars asks for them.
+                if (todayOn && !calendarAccess) {
+                    askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
+                    return@SwitchRow
+                }
+                todayOn = !todayOn
+                Today.setEnabled(context, todayOn)
+                if (todayOn && !calendarAccess) askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
+            }
+            return
+        }
+        Row(
+            title = stringResource(label),
+            value = if (here) null else stringResource(R.string.source_missing),
+            modifier = actions,
+        ) {
+            context.packageManager.getLaunchIntentForPackage(pkg)?.let { context.startActivity(it) }
+        }
+    }
     if (choosing) {
         BackHandler { choosing = false }
         ChooseAppsScreen { choosing = false }
@@ -118,7 +245,10 @@ private fun MainScreen() {
             )
         },
     ) { padding ->
-        LazyColumnMMD(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        LazyColumnMMD(
+            Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp).onGloballyPositioned { listAt[0] = it },
+            state = list,
+        ) {
             item { Spacer(Modifier.height(8.dp)) }
             item {
                 Row(
@@ -141,50 +271,47 @@ private fun MainScreen() {
                     modifier = Modifier.padding(top = 18.dp, bottom = 2.dp),
                 )
             }
-            SOURCES.forEach { (pkg, label) ->
-                item(key = pkg) {
-                    val here = installed[pkg] == true
-                    // The newer sources: not listed without their app, and off until switched on.
-                    if (pkg in Glance.OPT_IN) {
-                        if (!here) return@item
-                        val on = pkg in switchedOn
-                        SwitchRow(title = stringResource(label), note = stringResource(R.string.source_own_switch), checked = on) {
-                            Glance.setSwitchedOn(context, pkg, !on)
-                            switchedOn = if (on) switchedOn - pkg else switchedOn + pkg
-                        }
-                        return@item
-                    }
-                    // Without Calendar, Glance reads today's events itself, if asked to.
-                    if (pkg == Glance.CALENDAR && !here) {
-                        SwitchRow(
-                            title = stringResource(R.string.today_switch),
-                            note = stringResource(
-                                when {
-                                    muditaCalendar && calendarAccess -> R.string.today_note_all
-                                    muditaCalendar && todayOn -> R.string.today_note_mudita
-                                    muditaCalendar -> R.string.today_note_mudita_off
-                                    calendarAccess -> R.string.today_note_shared
-                                    else -> R.string.today_note_none
+            order.filter { listed(it) }.forEach { key ->
+                item(key = key) {
+                    val held = key == carrying
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .onGloballyPositioned { rows[key] = it }
+                            .holdToMove(
+                                key = key,
+                                toWindow = { rows[key]?.localToWindow(it) ?: it },
+                                onPickUp = { carrying = key },
+                                onMove = { y -> carryTo(key, y) },
+                                onDrop = {
+                                    carrying = null
+                                    Glance.setOrder(context, order)
                                 },
-                            ),
-                            checked = todayOn,
-                        ) {
-                            // With it on, a press on a row still missing the other calendars asks for them.
-                            if (todayOn && !calendarAccess) {
-                                askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
-                                return@SwitchRow
-                            }
-                            todayOn = !todayOn
-                            Today.setEnabled(context, todayOn)
-                            if (todayOn && !calendarAccess) askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
-                        }
-                        return@item
-                    }
-                    Row(
-                        title = stringResource(label),
-                        value = if (here) null else stringResource(R.string.source_missing),
+                                onMenu = { menuFor = key },
+                            )
+                            // Picked up: a black rim, drawn at once, nothing that glides.
+                            .then(if (held) Modifier.border(2.dp, MaterialTheme.colorScheme.onSurface) else Modifier)
+                            .padding(horizontal = if (held) 6.dp else 0.dp),
                     ) {
-                        context.packageManager.getLaunchIntentForPackage(pkg)?.let { context.startActivity(it) }
+                        // For a screen reader, Move up and Move down on each row it stops at.
+                        val actions = Modifier.semantics {
+                            customActions = listOfNotNull(
+                                CustomAccessibilityAction(moveUpLabel) { step(key, -1) }.takeIf { canStep(key, -1) },
+                                CustomAccessibilityAction(moveDownLabel) { step(key, 1) }.takeIf { canStep(key, 1) },
+                            )
+                        }
+                        if (key == Glance.UNREAD) {
+                            // Messaging, Email and other apps' counts share the foot of the panel,
+                            // so they move as one.
+                            UNREAD_SOURCES.forEach { (pkg, label) -> SourceRow(pkg, label, actions) }
+                            TextMMD(
+                                text = stringResource(R.string.unread_together),
+                                style = MaterialTheme.typography.labelSmall,
+                                modifier = Modifier.padding(bottom = 10.dp),
+                            )
+                        } else {
+                            SourceRow(key, SOURCES.getValue(key), actions)
+                        }
                     }
                 }
             }
@@ -194,22 +321,6 @@ private fun MainScreen() {
                     style = MaterialTheme.typography.labelSmall,
                     modifier = Modifier.padding(top = 10.dp),
                 )
-            }
-            item {
-                // Pressed, it moves on to the next part, the way round the panel draws them.
-                Row(
-                    title = stringResource(R.string.keep_title),
-                    value = stringResource(
-                        when (keep) {
-                            Glance.Keep.TODAY -> R.string.keep_today
-                            Glance.Keep.WEATHER -> R.string.keep_weather
-                            Glance.Keep.COUNTS -> R.string.keep_counts
-                        },
-                    ),
-                ) {
-                    keep = Glance.Keep.entries[(keep.ordinal + 1) % Glance.Keep.entries.size]
-                    Glance.setKeep(context, keep)
-                }
             }
             item {
                 TextMMD(
@@ -253,11 +364,44 @@ private fun MainScreen() {
         }
     }
     if (aboutOpen) AboutDialog { aboutOpen = false }
+    menuFor?.let { key ->
+        MoveMenu(
+            title = stringResource(if (key == Glance.UNREAD) R.string.unread_title else SOURCES.getValue(key)),
+            canUp = canStep(key, -1),
+            canDown = canStep(key, 1),
+            onMove = { by -> step(key, by); menuFor = null },
+            onDismiss = { menuFor = null },
+        )
+    }
+}
+
+/** Held and let go: Move up and Move down, for when dragging is fiddly. */
+@Composable
+private fun MoveMenu(title: String, canUp: Boolean, canDown: Boolean, onMove: (Int) -> Unit, onDismiss: () -> Unit) {
+    EInkDialog(onDismiss = onDismiss) {
+        TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
+        Spacer(Modifier.height(14.dp))
+        if (canUp) {
+            OutlinedButtonMMD(onClick = { onMove(-1) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                TextMMD(text = stringResource(R.string.move_up), style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+        if (canDown) {
+            OutlinedButtonMMD(onClick = { onMove(1) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                TextMMD(text = stringResource(R.string.move_down), style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(10.dp))
+        }
+        OutlinedButtonMMD(onClick = onDismiss, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+            TextMMD(text = stringResource(R.string.about_close), style = MaterialTheme.typography.bodySmall)
+        }
+    }
 }
 
 @Composable
-private fun Row(title: String, value: String?, onClick: () -> Unit) {
-    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp)) {
+private fun Row(title: String, value: String?, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    Column(Modifier.fillMaxWidth().clickable(onClick = onClick).then(modifier).padding(vertical = 14.dp)) {
         TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
         if (value != null) TextMMD(text = value, style = MaterialTheme.typography.labelSmall)
     }
@@ -291,7 +435,13 @@ private fun PreviewScreen(serviceOn: Boolean, onBack: () -> Unit) {
             } else {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                     Box(Modifier.width(PANEL_WIDTH_DP.dp)) {
-                        GlancePanel(sections = shown, notices = notices, roomDp = PREVIEW_ROOM_DP, onOpen = {})
+                        GlancePanel(
+                            sections = shown,
+                            notices = notices,
+                            order = Glance.order(context),
+                            roomDp = PREVIEW_ROOM_DP,
+                            onOpen = {},
+                        )
                     }
                 }
             }
@@ -356,9 +506,9 @@ private fun ChooseAppsScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun SwitchRow(title: String, note: String?, checked: Boolean, onClick: () -> Unit) {
+private fun SwitchRow(title: String, note: String?, checked: Boolean, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).then(modifier).padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -384,8 +534,8 @@ private fun openNotificationAccess(context: android.content.Context) {
     }
 }
 
-/** The apps that take part, in the order the panel draws them. */
-private val SOURCES = listOf(
+/** The stacked sources' names, listed in the person's order ([Glance.order]). */
+private val SOURCES = mapOf(
     "com.wanderwildwood.zatsuno" to R.string.source_field_kit,
     "com.wanderwildwood.koyomi" to R.string.source_calendar,
     "com.wanderwildwood.fukuyaku" to R.string.source_medicine,
@@ -394,6 +544,10 @@ private val SOURCES = listOf(
     "com.wanderwildwood.satsuire" to R.string.source_wallet,
     "com.wanderwildwood.jimeikin" to R.string.source_music,
     "com.wanderwildwood.mimidoku" to R.string.source_audio_reading,
+)
+
+/** The counts, which keep one place in the order between them. */
+private val UNREAD_SOURCES = listOf(
     "com.wanderwildwood.kotozute" to R.string.source_messaging,
     "com.wanderwildwood.tayori" to R.string.source_email,
 )

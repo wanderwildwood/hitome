@@ -40,110 +40,126 @@ internal const val PAD_DP = 4
 internal const val PANEL_WIDTH_DP = 240
 
 /**
- * The stacked sections, each under a dotted rule like the lock screen's own, then the counts on
- * one line, then other apps' notifications as names and numbers. Pressing a section, a count or
- * a name opens the app it came from.
+ * The parts in the person's [order], each under a dotted rule like the lock screen's own: the
+ * stacked sections, and the counts with other apps' notifications as names and numbers, which
+ * are one part. Pressing a section, a count or a name opens the app it came from.
  *
- * [roomDp] is the height there is before a music strip or the padlock; the first section,
- * today's events, gives up lines to fit it and says how many it left out.
+ * [roomDp] is the height there is before a music strip or the padlock. When not everything fits,
+ * the parts earlier in the order win ([chosen]), and today's events give up lines to fit and say
+ * how many they left out.
  */
 @Composable
 fun GlancePanel(
     sections: List<Glance.Section>,
     notices: List<Notices.Notice>,
+    order: List<String>,
     roomDp: Int,
     onOpen: (String) -> Unit,
 ) {
     ThemeMMD(colorScheme = monochrome) {
-        // Everything but the counts is stacked; today's events may come from Glance's own
-        // reading, under the calendar app it opens rather than one of the four.
-        val stacked = sections.filter { it.packageName !in Glance.COUNTS }
-        val counts = sections.filter { it.packageName in Glance.COUNTS }
         // With the words shown, each app has a line of its own; without, the names share lines.
         val withText = notices.any { it.text != null }
         // Without words, Messaging's and Email's entries have nothing to add to their counts.
+        val allNotices = if (withText) notices else notices.filter { it.counted }
+        val kept = chosen(sections, allNotices, order, roomDp)
+        val keptSections = sections.filter { it.key in kept }
         @Suppress("NAME_SHADOWING")
-        val notices = if (withText) notices else notices.filter { it.counted }
+        val notices = if (Glance.UNREAD in kept) allNotices else emptyList()
+        val counts = keptSections.filter { it.key == Glance.UNREAD }
         val noticeRows = if (withText) emptyList() else packNotices(notices)
         val textLines = if (withText) textLines(notices) else emptyList()
         val noticeLines = noticeRows.size + textLines.size
         val footDp = if (counts.isEmpty() && noticeLines == 0) 0
             else RULE_DP + PAD_DP + (if (counts.isNotEmpty()) LINE_DP else 0) + noticeLines * LINE_DP
-        val fitted = fit(stacked, footDp, roomDp)
+        val fitted = fit(keptSections.filter { it.key != Glance.UNREAD }, footDp, roomDp)
         Column(Modifier.fillMaxWidth().background(Color.White)) {
-            fitted.forEach { section ->
-                Rule()
-                Column(Modifier.fillMaxWidth().clickable { onOpen(section.packageName) }.padding(vertical = 2.dp)) {
-                    section.heading?.let {
-                        TextMMD(
-                            text = it.uppercase(),
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                        )
-                    }
-                    section.lines.forEach { line -> LineRow(line) }
+            order.forEach { key ->
+                if (key == Glance.UNREAD) {
+                    if (counts.isNotEmpty() || noticeLines > 0) Foot(counts, textLines, noticeRows, onOpen)
+                    return@forEach
                 }
-            }
-            if (counts.isNotEmpty() || noticeLines > 0) {
-                Rule()
-                Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                    if (counts.isNotEmpty()) {
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            counts.forEachIndexed { i, section ->
-                                if (i > 0) TextMMD(text = SEPARATOR, style = MaterialTheme.typography.bodySmall)
-                                TextMMD(
-                                    text = section.lines.joinToString(" · ") { it.text },
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = Modifier.clickable { onOpen(section.packageName) },
-                                )
-                            }
-                        }
-                    }
-                    textLines.forEach { line ->
-                        Row(
-                            Modifier.fillMaxWidth().then(
-                                if (line.packageName != null) Modifier.clickable { onOpen(line.packageName) } else Modifier,
-                            ),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
+                fitted.filter { it.key == key }.forEach { section ->
+                    Rule()
+                    Column(Modifier.fillMaxWidth().clickable { onOpen(section.packageName) }.padding(vertical = 2.dp)) {
+                        section.heading?.let {
                             TextMMD(
-                                text = line.name,
-                                style = MaterialTheme.typography.bodySmall,
+                                text = it.uppercase(),
+                                style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.Bold,
                                 maxLines = 1,
                             )
-                            if (line.text != null) {
-                                TextMMD(
-                                    text = "  " + line.text,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
-                            }
                         }
-                    }
-                    noticeRows.forEach { row ->
-                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                            row.forEachIndexed { i, item ->
-                                if (i > 0) TextMMD(text = SEPARATOR, style = MaterialTheme.typography.bodySmall)
-                                TextMMD(
-                                    text = item.text,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    modifier = if (item.packageName != null) {
-                                        Modifier.clickable { onOpen(item.packageName) }
-                                    } else Modifier,
-                                )
-                            }
-                        }
+                        section.lines.forEach { line -> LineRow(line) }
                     }
                 }
             }
             if (fitted.isNotEmpty() || counts.isNotEmpty() || noticeLines > 0) Rule()
+        }
+    }
+}
+
+/** The counts on one line, then other apps' notifications, under one rule. */
+@Composable
+private fun Foot(
+    counts: List<Glance.Section>,
+    textLines: List<TextLine>,
+    noticeRows: List<List<NoticeItem>>,
+    onOpen: (String) -> Unit,
+) {
+    Rule()
+    Column(Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        if (counts.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                counts.forEachIndexed { i, section ->
+                    if (i > 0) TextMMD(text = SEPARATOR, style = MaterialTheme.typography.bodySmall)
+                    TextMMD(
+                        text = section.lines.joinToString(" · ") { it.text },
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.clickable { onOpen(section.packageName) },
+                    )
+                }
+            }
+        }
+        textLines.forEach { line ->
+            Row(
+                Modifier.fillMaxWidth().then(
+                    if (line.packageName != null) Modifier.clickable { onOpen(line.packageName) } else Modifier,
+                ),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                TextMMD(
+                    text = line.name,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                )
+                if (line.text != null) {
+                    TextMMD(
+                        text = "  " + line.text,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+            }
+        }
+        noticeRows.forEach { row ->
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                row.forEachIndexed { i, item ->
+                    if (i > 0) TextMMD(text = SEPARATOR, style = MaterialTheme.typography.bodySmall)
+                    TextMMD(
+                        text = item.text,
+                        style = MaterialTheme.typography.bodySmall,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = if (item.packageName != null) {
+                            Modifier.clickable { onOpen(item.packageName) }
+                        } else Modifier,
+                    )
+                }
+            }
         }
     }
 }
@@ -258,43 +274,81 @@ private fun textLines(notices: List<Notices.Notice>): List<TextLine> {
 }
 
 /**
- * The first section, today's events, gives up lines from its end until everything fits in
- * [roomDp], and says how many it left out. It always keeps its first line: "+3 more" on its own
- * says there is something today without saying what. Nothing else is cut - the weather is two
- * lines at most, the counts one, and other apps' notifications three.
+ * Today's events give up lines from their end until everything fits in [roomDp], and say how
+ * many they left out. They always keep their first line: "+3 more" on its own says there is
+ * something today without saying what. Nothing else is cut; what else does not fit was left
+ * out whole by [chosen].
  */
 @Composable
 private fun fit(stacked: List<Glance.Section>, footDp: Int, roomDp: Int): List<Glance.Section> {
-    val first = stacked.firstOrNull() ?: return stacked
-    val rest = stacked.drop(1)
-    fun height(firstLines: Int) =
-        RULE_DP + PAD_DP + (if (first.heading != null) HEADING_DP else 0) + firstLines * LINE_DP +
-            rest.sumOf { RULE_DP + PAD_DP + (if (it.heading != null) HEADING_DP else 0) + it.lines.size * LINE_DP } +
-            footDp + RULE_DP
-    val all = first.lines.size
+    val today = stacked.firstOrNull { it.key == Glance.CALENDAR } ?: return stacked
+    val rest = stacked.filter { it !== today }
+    fun height(todayLines: Int) =
+        sectionDp(today, todayLines) + rest.sumOf { sectionDp(it, it.lines.size) } + footDp + RULE_DP
+    val all = today.lines.size
     if (height(all) <= roomDp) return stacked
     // Shown lines plus the "+N more" line; at least one real line whatever the room.
     var shown = all - 1
     while (shown > 1 && height(shown + 1) > roomDp) shown--
     val more = stringResource(R.string.panel_more).format(all - shown)
-    return listOf(first.copy(lines = first.lines.take(shown) + Glance.Line(null, more, false))) + rest
+    val cut = today.copy(lines = today.lines.take(shown) + Glance.Line(null, more, false))
+    return stacked.map { if (it === today) cut else it }
 }
 
+private fun sectionDp(section: Glance.Section, lines: Int) =
+    RULE_DP + PAD_DP + (if (section.heading != null) HEADING_DP else 0) + lines * LINE_DP
+
 /**
- * The least height, in dp, the panel can be drawn in: today's events cut to their first line and
- * "+N more", as [fit] leaves them, and everything else whole. Other apps' notifications are
- * counted at the most lines they can take, since how they pack is known only once measured.
+ * Each part of [order] that has something to show, with the least height it can be drawn in, in
+ * dp: today's events cut to their first line and "+N more", as [fit] leaves them, and everything
+ * else whole. Other apps' notifications are counted at the most lines they can take, since how
+ * they pack is known only once measured.
  */
-internal fun leastDp(sections: List<Glance.Section>, notices: List<Notices.Notice>): Int {
-    val stacked = sections.filter { it.packageName !in Glance.COUNTS }
-    val counts = sections.any { it.packageName in Glance.COUNTS }
-    val withText = notices.any { it.text != null }
-    val shown = if (withText) notices.size else notices.count { it.counted }
-    val noticeLines = minOf(shown, if (withText) TEXT_ROWS else NOTICE_ROWS)
-    val foot = if (!counts && noticeLines == 0) 0
-        else RULE_DP + PAD_DP + (if (counts) LINE_DP else 0) + noticeLines * LINE_DP
-    return stacked.withIndex().sumOf { (i, it) ->
-        val lines = if (i == 0) minOf(it.lines.size, 2) else it.lines.size
-        RULE_DP + PAD_DP + (if (it.heading != null) HEADING_DP else 0) + lines * LINE_DP
-    } + foot + RULE_DP
+private fun parts(
+    sections: List<Glance.Section>,
+    notices: List<Notices.Notice>,
+    order: List<String>,
+): List<Pair<String, Int>> = order.mapNotNull { key ->
+    if (key == Glance.UNREAD) {
+        val counts = sections.any { it.key == Glance.UNREAD }
+        val withText = notices.any { it.text != null }
+        val shown = if (withText) notices.size else notices.count { it.counted }
+        val noticeLines = minOf(shown, if (withText) TEXT_ROWS else NOTICE_ROWS)
+        if (!counts && noticeLines == 0) null
+        else key to RULE_DP + PAD_DP + (if (counts) LINE_DP else 0) + noticeLines * LINE_DP
+    } else {
+        val section = sections.firstOrNull { it.key == key } ?: return@mapNotNull null
+        val lines = if (key == Glance.CALENDAR) minOf(section.lines.size, 2) else section.lines.size
+        key to sectionDp(section, lines)
+    }
+}
+
+/** The least height, in dp, the whole panel can be drawn in. See [parts]. */
+internal fun leastDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>): Int =
+    parts(sections, notices, order).sumOf { it.second } + RULE_DP
+
+/** The least height of the first part in [order] that has something to show; 0 for none. */
+internal fun firstDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>): Int =
+    parts(sections, notices, order).firstOrNull()?.let { it.second + RULE_DP } ?: 0
+
+/**
+ * The parts drawn in [roomDp]: the first in [order] always, then each after it that still fits,
+ * so the person's order decides what wins. A part too tall for what is left is passed over for
+ * a smaller one after it.
+ */
+internal fun chosen(
+    sections: List<Glance.Section>,
+    notices: List<Notices.Notice>,
+    order: List<String>,
+    roomDp: Int,
+): Set<String> {
+    val kept = mutableSetOf<String>()
+    var used = RULE_DP
+    parts(sections, notices, order).forEach { (key, dp) ->
+        if (kept.isEmpty() || used + dp <= roomDp) {
+            kept += key
+            used += dp
+        }
+    }
+    return kept
 }
