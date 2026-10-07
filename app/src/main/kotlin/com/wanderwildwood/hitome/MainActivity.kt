@@ -82,6 +82,7 @@ private fun MainScreen() {
     var showText by remember { mutableStateOf(Notices.showText(context)) }
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
+    var switchedOn by remember { mutableStateOf(Glance.OPT_IN.filter { Glance.switchedOn(context, it) }.toSet()) }
     var keep by remember { mutableStateOf(Glance.keep(context)) }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
@@ -143,6 +144,16 @@ private fun MainScreen() {
             SOURCES.forEach { (pkg, label) ->
                 item(key = pkg) {
                     val here = installed[pkg] == true
+                    // The newer sources: not listed without their app, and off until switched on.
+                    if (pkg in Glance.OPT_IN) {
+                        if (!here) return@item
+                        val on = pkg in switchedOn
+                        SwitchRow(title = stringResource(label), note = stringResource(R.string.source_own_switch), checked = on) {
+                            Glance.setSwitchedOn(context, pkg, !on)
+                            switchedOn = if (on) switchedOn - pkg else switchedOn + pkg
+                        }
+                        return@item
+                    }
                     // Without Calendar, Glance reads today's events itself, if asked to.
                     if (pkg == Glance.CALENDAR && !here) {
                         SwitchRow(
@@ -375,9 +386,12 @@ private fun openNotificationAccess(context: android.content.Context) {
 
 /** The apps that take part, in the order the panel draws them. */
 private val SOURCES = listOf(
+    "com.wanderwildwood.zatsuno" to R.string.source_field_kit,
     "com.wanderwildwood.koyomi" to R.string.source_calendar,
+    "com.wanderwildwood.fukuyaku" to R.string.source_medicine,
     "com.wanderwildwood.soramoyo" to R.string.source_sky,
     "com.wanderwildwood.oboegaki" to R.string.source_notes,
+    "com.wanderwildwood.satsuire" to R.string.source_wallet,
     "com.wanderwildwood.jimeikin" to R.string.source_music,
     "com.wanderwildwood.mimidoku" to R.string.source_audio_reading,
     "com.wanderwildwood.kotozute" to R.string.source_messaging,

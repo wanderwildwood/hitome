@@ -10,14 +10,18 @@
     <string name="service_on">The panel is on</string>
     <string name="service_on_note">It shows on the lock screen. Turn it off in Accessibility.</string>
     <string name="sources_heading">What it shows</string>
+    <string name="source_field_kit">Field Kit: the emergency card</string>
     <string name="source_calendar">Calendar: today\'s events</string>
+    <string name="source_medicine">Medicine: the next dose</string>
     <string name="source_sky">Sky: the weather</string>
     <string name="source_notes">Notes: pinned notes</string>
+    <string name="source_wallet">Wallet: today\'s tickets</string>
     <string name="source_music">Music Box: what is playing</string>
     <string name="source_audio_reading">Audio Reading: the book being read</string>
     <string name="source_messaging">Messaging: unread</string>
     <string name="source_email">Email: unread</string>
     <string name="source_missing">Not installed</string>
+    <string name="source_own_switch">Shown once it is on here and in that app too.</string>
     <!-- Without Calendar installed: Glance reads today's events itself -->
     <string name="today_switch">Today\'s events</string>
     <string name="today_note_mudita_off">From Mudita\'s Calendar, and the phone\'s other calendars if you allow it.</string>

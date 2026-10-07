@@ -21,13 +21,16 @@ object Glance {
     data class Section(val packageName: String, val heading: String?, val lines: List<Line>)
 
     /**
-     * Stacked sections, top to bottom: today's events, the weather, pinned notes, then what is
-     * playing - a song, then a book.
+     * Stacked sections, top to bottom: the emergency card, today's events, the next dose, the
+     * weather, pinned notes, today's tickets, then what is playing - a song, then a book.
      */
     val STACKED = listOf(
+        "com.wanderwildwood.zatsuno",
         "com.wanderwildwood.koyomi",
+        "com.wanderwildwood.fukuyaku",
         "com.wanderwildwood.soramoyo",
         "com.wanderwildwood.oboegaki",
+        "com.wanderwildwood.satsuire",
         "com.wanderwildwood.jimeikin",
         "com.wanderwildwood.mimidoku",
     )
@@ -43,6 +46,30 @@ object Glance {
      * notifications are counted (see [Notices]): each already has its place on the panel.
      */
     val SOURCES = STACKED + COUNTS
+
+    /**
+     * Sources that stay off the panel until switched on here too, as well as in their own app:
+     * the emergency card, the next dose and today's tickets. Nothing new appears on the lock
+     * screen just because an app was installed.
+     */
+    val OPT_IN = setOf(
+        "com.wanderwildwood.zatsuno",
+        "com.wanderwildwood.fukuyaku",
+        "com.wanderwildwood.satsuire",
+    )
+
+    private const val KEY_ON = "on"
+
+    /** Whether [packageName], one of [OPT_IN], has been switched on in Glance. */
+    fun switchedOn(context: Context, packageName: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY_ON, emptySet())!!.contains(packageName)
+
+    fun setSwitchedOn(context: Context, packageName: String, on: Boolean) {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        val now = prefs.getStringSet(KEY_ON, emptySet())!!.toMutableSet()
+        if (on) now += packageName else now -= packageName
+        prefs.edit().putStringSet(KEY_ON, now).apply()
+    }
 
     fun uri(packageName: String): Uri = Uri.parse("content://$packageName.glance/lines")
 
@@ -90,7 +117,11 @@ object Glance {
     fun readAll(context: Context): List<Section> {
         val calendarInstalled = context.packageManager.getLaunchIntentForPackage(CALENDAR) != null
         return (STACKED + COUNTS).mapNotNull { pkg ->
-            if (pkg == CALENDAR && !calendarInstalled) Today.read(context) else read(context, pkg)
+            when {
+                pkg in OPT_IN && !switchedOn(context, pkg) -> null
+                pkg == CALENDAR && !calendarInstalled -> Today.read(context)
+                else -> read(context, pkg)
+            }
         }
     }
 

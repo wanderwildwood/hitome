@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-      No permissions at all, and no INTERNET. It reads what four apps hand it through their own
+      No permissions at all, and no INTERNET. It reads what the other apps hand it through their own
       providers, which answer this app alone, and draws it over the lock screen as an
       accessibility service - a switch the phone's owner turns on in Accessibility.
 
@@ -15,9 +15,12 @@
     <uses-permission android:name="android.permission.READ_CALENDAR" />
 
     <queries>
+        <package android:name="com.wanderwildwood.zatsuno" />
         <package android:name="com.wanderwildwood.koyomi" />
+        <package android:name="com.wanderwildwood.fukuyaku" />
         <package android:name="com.wanderwildwood.soramoyo" />
         <package android:name="com.wanderwildwood.oboegaki" />
+        <package android:name="com.wanderwildwood.satsuire" />
         <package android:name="com.wanderwildwood.jimeikin" />
         <package android:name="com.wanderwildwood.mimidoku" />
         <package android:name="com.wanderwildwood.kotozute" />

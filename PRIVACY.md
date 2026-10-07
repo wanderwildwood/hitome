@@ -1,15 +1,17 @@
 # Privacy
 
-Glance shows on the lock screen what four apps on the phone hand it and, if you turn it on, how
+Glance shows on the lock screen what the apps that take part hand it and, if you turn it on, how
 many notifications the apps you choose have waiting. On a phone without Calendar it can read
 today's events itself, if you turn that on. It has no network access and sends nothing anywhere.
 
 ## What it reads
 
-- **The lines the apps hand it.** Calendar, Sky, Messaging and Email each keep a small provider
-  that answers Glance alone. Today's event titles and times, the weather, and two unread
-  counts - never a message, a sender or a subject. Each app hands over nothing while its own
-  lock-screen switch is off.
+- **The lines the apps hand it.** Field Kit, Calendar, Medicine, Sky, Notes, Wallet, Music Box,
+  Audio Reading, Messaging and Email each keep a small provider that answers Glance alone: the
+  emergency card's ticked fields, today's event titles and times, the next dose, the weather,
+  pinned notes, the names of today's tickets, what is playing, and two unread counts - never a
+  message, a sender or a subject. Each app hands over nothing while its own lock-screen switch
+  is off.
 - **Today's events, without Calendar - only if you turn it on.** On a phone without
   [Calendar](https://github.com/wanderwildwood/koyomi), **Today's events** (off until you turn it
   on) reads what is left of today, titles and times only. From Mudita's own Calendar, which

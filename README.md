@@ -14,15 +14,22 @@ day can be seen without unlocking the phone.
 
 A panel under the clock and date, in the lock screen's own dotted rules:
 
+- **The emergency card**, from Field Kit, once its "Show on the lock screen" is on: the
+  fields left ticked on the card, allergies and conditions in bold.
 - **Today**, from [Calendar](https://github.com/wanderwildwood/koyomi): all-day events first,
   then what is still to come, with times. When there is not room for them all, it shows the
   first and how many more. Without Calendar, turn on **Today's events** in Glance and it reads
   today itself: from Mudita's own Calendar, and from the phone's other calendars if you allow
   calendar access.
+- **The next dose**, from [Medicine](https://github.com/wanderwildwood/fukuyaku), once
+  "Next dose on the lock screen" is on in its settings: a dose that rang and is not marked yet,
+  in bold, then the next one due.
 - **The weather**, from [Sky](https://github.com/wanderwildwood/soramoyo): the temperature
   now, the day's high and low, and a line when rain or snow is likely soon.
 - **Pinned notes**, from [Notes](https://github.com/wanderwildwood/oboegaki): each by its title,
   and a list with how much of it is left, "Groceries · 3 to do".
+- **Today's tickets**, from [Wallet](https://github.com/wanderwildwood/satsuire): the names of
+  the cards good for today, a boarding pass on the day of the flight. Never the barcode.
 - **What is playing**, from [Music Box](https://github.com/wanderwildwood/jimeikin) and
   [Audio Reading](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
   book and its chapter (or the time left in a book with no chapters), and whether it is paused.
@@ -40,8 +47,10 @@ Pressing a section, or an app's name, unlocks the phone and opens that app.
 
 Glance knows nothing on its own. Each app hands it its own lines and has its own switch, in its
 own settings, to stop. An app that is not installed, has nothing to say, or has its switch off
-simply leaves no line. Other apps are the exception: Glance counts their notifications itself,
-and only for the apps you choose.
+simply leaves no line. Field Kit, Medicine and Wallet also wait for a switch in Glance, under
+**What it shows**, which is there once the app is installed and off until you turn it on. Other
+apps are the exception: Glance counts their notifications itself, and only for the apps you
+choose.
 
 ## Where it sits
 
