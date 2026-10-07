@@ -60,9 +60,10 @@ player - and starts below the lowest, each time the screen wakes. It stops above
 Box and Audio Reading draw near the foot of the screen, and above the padlock.
 
 The parts are drawn in the order they are listed under **What it shows** in Glance, which is
-the order above until you change it: hold a row and drag it, or hold and let go for **Move up**
-and **Move down**. Unread and other apps' counts move as one. When there is not room for all of
-it, the parts nearest the top are kept, and today's events give up lines before anything else.
+the order above until you change it: hold a row and drag it, or hold and let go for **Move to
+top**, **Move up** and **Move down**. Unread and other apps' counts move as one. When there is
+not room for all of it, the parts nearest the top are kept, and today's events give up lines
+before anything else.
 
 It works with Mudita's own launcher, with inkOS, and with Katapult. When Katapult draws its own
 lock-screen widgets, Glance fits around them, above or below, wherever it fits whole. If it fits

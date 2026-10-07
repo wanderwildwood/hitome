@@ -121,6 +121,7 @@ private fun MainScreen() {
     var carrying by remember { mutableStateOf<String?>(null) }
     var menuFor by remember { mutableStateOf<String?>(null) }
     val rows = remember { mutableMapOf<String, LayoutCoordinates>() }
+    val moveTopLabel = stringResource(R.string.move_top)
     val moveUpLabel = stringResource(R.string.move_up)
     val moveDownLabel = stringResource(R.string.move_down)
 
@@ -174,6 +175,15 @@ private fun MainScreen() {
         val shown = order.filter { listed(it) }
         val next = shown[shown.indexOf(key) + by]
         order = Glance.moved(order, order.indexOf(key), order.indexOf(next))
+        Glance.setOrder(context, order)
+        return true
+    }
+
+    /** Move to top from the menu: above every listed row, and saved at once. */
+    fun toTop(key: String): Boolean {
+        if (!canStep(key, -1)) return false
+        val first = order.first { listed(it) }
+        order = Glance.moved(order, order.indexOf(key), order.indexOf(first))
         Glance.setOrder(context, order)
         return true
     }
@@ -296,6 +306,7 @@ private fun MainScreen() {
                         // For a screen reader, Move up and Move down on each row it stops at.
                         val actions = Modifier.semantics {
                             customActions = listOfNotNull(
+                                CustomAccessibilityAction(moveTopLabel) { toTop(key) }.takeIf { canStep(key, -1) },
                                 CustomAccessibilityAction(moveUpLabel) { step(key, -1) }.takeIf { canStep(key, -1) },
                                 CustomAccessibilityAction(moveDownLabel) { step(key, 1) }.takeIf { canStep(key, 1) },
                             )
@@ -370,18 +381,31 @@ private fun MainScreen() {
             canUp = canStep(key, -1),
             canDown = canStep(key, 1),
             onMove = { by -> step(key, by); menuFor = null },
+            onTop = { toTop(key); menuFor = null },
             onDismiss = { menuFor = null },
         )
     }
 }
 
-/** Held and let go: Move up and Move down, for when dragging is fiddly. */
+/** Held and let go: Move to top, Move up and Move down, for when dragging is fiddly. */
 @Composable
-private fun MoveMenu(title: String, canUp: Boolean, canDown: Boolean, onMove: (Int) -> Unit, onDismiss: () -> Unit) {
+private fun MoveMenu(
+    title: String,
+    canUp: Boolean,
+    canDown: Boolean,
+    onMove: (Int) -> Unit,
+    onTop: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     EInkDialog(onDismiss = onDismiss) {
         TextMMD(text = title, style = MaterialTheme.typography.bodyMedium)
         Spacer(Modifier.height(14.dp))
+        // Like Move up, not there for the row already first.
         if (canUp) {
+            OutlinedButtonMMD(onClick = onTop, modifier = Modifier.fillMaxWidth().height(48.dp)) {
+                TextMMD(text = stringResource(R.string.move_top), style = MaterialTheme.typography.bodySmall)
+            }
+            Spacer(Modifier.height(10.dp))
             OutlinedButtonMMD(onClick = { onMove(-1) }, modifier = Modifier.fillMaxWidth().height(48.dp)) {
                 TextMMD(text = stringResource(R.string.move_up), style = MaterialTheme.typography.bodySmall)
             }

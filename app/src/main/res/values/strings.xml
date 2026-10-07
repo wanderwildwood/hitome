@@ -43,6 +43,7 @@
     <string name="unread_together">These two and other apps\' counts move together.</string>
     <!-- The title of the Move up / Move down menu for the Messaging and Email row -->
     <string name="unread_title">What is unread</string>
+    <string name="move_top">Move to top</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="others_heading">Other apps</string>
