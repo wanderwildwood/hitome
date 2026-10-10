@@ -37,6 +37,10 @@ today's events itself, if you turn that on. It has no network access and sends n
   With **Show what they say** on, Messaging's and Email's newest notification is read too, for
   its words only, under the same rules. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
+- **Do Not Disturb, only if you turn on Ring for calls only.** Glance then adds one Do Not
+  Disturb rule of its own (calls from anyone and alarms ring, nothing is hidden) and removes it
+  when you turn it off. It reads nothing through it. The code is
+  `app/src/main/kotlin/com/wanderwildwood/hitome/Quiet.kt`.
 
 ## What anyone can see
 

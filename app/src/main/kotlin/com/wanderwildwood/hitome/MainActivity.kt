@@ -95,6 +95,7 @@ private fun MainScreen() {
     val access = remember(checks) { Notices.accessGranted(context) }
     val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
     var showText by remember { mutableStateOf(Notices.showText(context)) }
+    var quietOn by remember(checks) { mutableStateOf(Quiet.on(context)) }
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
     var switchedOn by remember { mutableStateOf(Glance.OPT_IN.filter { Glance.switchedOn(context, it) }.toSet()) }
@@ -369,9 +370,30 @@ private fun MainScreen() {
                 TextMMD(
                     text = stringResource(R.string.others_note),
                     style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 10.dp, bottom = 24.dp),
+                    modifier = Modifier.padding(top = 10.dp),
                 )
             }
+            item {
+                TextMMD(
+                    text = stringResource(R.string.sound_heading),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 18.dp, bottom = 2.dp),
+                )
+            }
+            item {
+                SwitchRow(
+                    title = stringResource(R.string.quiet),
+                    note = stringResource(if (access) R.string.quiet_note else R.string.quiet_needs_access),
+                    checked = quietOn,
+                ) {
+                    if (!Quiet.allowed(context)) {
+                        openNotificationAccess(context)
+                        return@SwitchRow
+                    }
+                    if (Quiet.set(context, !quietOn)) quietOn = !quietOn
+                }
+            }
+            item { Spacer(Modifier.height(24.dp)) }
         }
     }
     if (aboutOpen) AboutDialog { aboutOpen = false }

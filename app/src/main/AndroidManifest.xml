@@ -11,8 +11,12 @@
 
       Calendar access is asked for only when the owner turns on today's events on a phone without
       Calendar, to read the phone's shared calendars; Mudita's own Calendar needs none.
+
+      Ring for calls only sets a Do Not Disturb rule of Glance's own, which notification access
+      allows; it is never set unless the owner turns it on.
     -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <queries>
         <package android:name="com.wanderwildwood.zatsuno" />

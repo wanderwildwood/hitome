@@ -58,6 +58,12 @@
     <string name="show_text">Show what they say</string>
     <string name="show_text_note">The newest from each chosen app, and from Messaging and Email, on the lock screen, where anyone holding the phone can read it.</string>
     <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden.</string>
+    <string name="sound_heading">Sound</string>
+    <string name="quiet">Ring for calls only</string>
+    <string name="quiet_note">Calls and alarms ring. Every other notification comes in silent, and still shows on the lock screen and in Glance.</string>
+    <string name="quiet_needs_access">Needs notification access, above.</string>
+    <!-- The name the phone's Do Not Disturb settings give the rule this switch sets -->
+    <string name="quiet_rule_name">Ring for calls only</string>
 
     <!-- On the panel, when there were more of today's events than room: "+2 more" -->
     <string name="panel_more">+%1$d more</string>

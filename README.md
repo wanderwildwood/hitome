@@ -81,6 +81,12 @@ nowhere, it does not show; dragging Katapult's notifications lower makes room.
 4. For other apps: press **Notifications are not counted**, turn on notification access for
    Glance, then **Choose apps**. Nothing is counted until you choose at least one.
 
+**Ring for calls only**, under **Sound**, lets calls and alarms ring and brings every other
+notification in silent; they still show on the lock screen and on the panel. It is a Do Not
+Disturb rule of Glance's own, listed with the phone's other Do Not Disturb rules, and it leaves
+the phone's own Do Not Disturb settings alone. It needs notification access. Turning on the
+phone's own Do Not Disturb and off again also turns this off; press it again to bring it back.
+
 An overlay above the lock screen is a window only an accessibility service is allowed to add,
 which is why it needs that switch. Counting notifications needs notification access, which
 Android grants to all of them; Glance counts only the ones you chose. See [PRIVACY.md](PRIVACY.md) for what it reads.
