@@ -33,7 +33,7 @@ change it:
 - **Today's tickets**, from [Wallet](https://github.com/wanderwildwood/satsuire): the names of
   the cards good for today, a boarding pass on the day of the flight. Never the barcode.
 - **What is playing**, from [Music Box](https://github.com/wanderwildwood/jimeikin) and
-  [Audio Reading](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
+  [Audiobooks](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
   book and its chapter (or the time left in a book with no chapters), and whether it is paused.
   Nothing once playback stops, and nothing while that app's own lock-screen controls are on,
   since they already say it.
@@ -62,7 +62,7 @@ choose.
 
 It measures where the lock screen's own items end - the date, the charging line, Mudita's music
 player - and starts below the lowest, each time the screen wakes. It stops above the strip Music
-Box and Audio Reading draw near the foot of the screen, and above the padlock.
+Box and Audiobooks draw near the foot of the screen, and above the padlock.
 
 The parts are drawn in the order they are listed under **What it shows** in Glance, which is
 the order above until you change it: hold a row and drag it, or hold and let go for **Move to

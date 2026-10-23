@@ -7,7 +7,7 @@ today's events itself, if you turn that on. It has no network access and sends n
 ## What it reads
 
 - **The lines the apps hand it.** Field Kit, Calendar, Medicine, Sky, Notes, Wallet, Music Box,
-  Audio Reading, Bitcoin, Messaging and Email each keep a small provider that answers Glance alone: the
+  Audiobooks, Bitcoin, Messaging and Email each keep a small provider that answers Glance alone: the
   emergency card's ticked fields, today's event titles and times, the next dose, the weather,
   pinned notes, the names of today's tickets, what is playing, the bitcoin price, and two unread counts - never a
   message, a sender or a subject. Each app hands over nothing while its own lock-screen switch
