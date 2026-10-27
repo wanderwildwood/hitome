@@ -33,4 +33,21 @@ class PanelForHomeTest {
         assertNull(rows[1][1])
         assertEquals("com.wanderwildwood.kotozute", rows[1][0])
     }
+
+    @Test
+    fun onlyInstalledAppsAreListed() {
+        val installed = mapOf(Glance.SKY to true, "com.wanderwildwood.fukuyaku" to false)
+        assertEquals(true, Glance.listed(Glance.SKY, installed, false))
+        assertEquals(false, Glance.listed("com.wanderwildwood.fukuyaku", installed, false))
+        assertEquals(false, Glance.listed("com.wanderwildwood.jimeikin", installed, false))
+        // Calendar's place is Today's events when Calendar itself is missing.
+        assertEquals(true, Glance.listed(Glance.CALENDAR, installed, false))
+    }
+
+    @Test
+    fun theCountsStayWhileMessagingOrEmailIsHereOrAccessIsOn() {
+        assertEquals(false, Glance.listed(Glance.UNREAD, emptyMap(), false))
+        assertEquals(true, Glance.listed(Glance.UNREAD, emptyMap(), true))
+        assertEquals(true, Glance.listed(Glance.UNREAD, mapOf("com.wanderwildwood.tayori" to true), false))
+    }
 }

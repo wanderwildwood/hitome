@@ -192,6 +192,17 @@ object Glance {
         }
     }
 
+    /**
+     * Whether a place in [order] is shown in Settings: only apps that are on this phone. Calendar's
+     * place stays, since Today's events stands in for it; the counts stay while Messaging or
+     * Email is installed, or notification access is on.
+     */
+    fun listed(key: String, installed: Map<String, Boolean>, access: Boolean): Boolean = when (key) {
+        CALENDAR -> true
+        UNREAD -> access || COUNTS.any { installed[it] == true }
+        else -> installed[key] == true
+    }
+
     /** The sources one by one in [order], the counts' place standing for both of them. */
     fun sources(order: List<String>): List<String> = order.flatMap { if (it == UNREAD) COUNTS else listOf(it) }
 

@@ -6,14 +6,12 @@
 
     <!-- Main screen -->
     <string name="service_off">The panel is off</string>
-    <string name="service_off_note">Turn on Glance in Accessibility. It also needs a screen lock, even just Swipe.</string>
+    <string name="service_off_note">Turn on \"Glance on the lock screen\" in Accessibility. It also needs a screen lock, even just Swipe.</string>
     <!-- How large the panel draws on the lock screen; Normal is the size it has always had. -->
     <string name="text_size">Text size</string>
     <string name="text_size_normal">Normal</string>
     <string name="text_size_large">Large</string>
     <string name="text_size_larger">Larger</string>
-    <string name="service_on">The panel is on</string>
-    <string name="service_on_note">It shows on the lock screen. Turn it off in Accessibility.</string>
     <string name="sources_heading">On the lock screen</string>
     <string name="source_field_kit">Field Kit: the emergency card</string>
     <string name="source_calendar">Calendar: today\'s events</string>
@@ -26,8 +24,6 @@
     <string name="source_bitcoin">Bitcoin: the price</string>
     <string name="source_messaging">Messaging: unread</string>
     <string name="source_email">Email: unread</string>
-    <string name="source_missing">Not installed</string>
-    <string name="source_own_switch">Shown once it is on here and in that app too.</string>
     <!-- Without Calendar installed: Glance reads today's events itself -->
     <string name="today_switch">Today\'s events</string>
     <string name="today_note_mudita_off">From Mudita\'s Calendar, and the phone\'s other calendars if you allow it.</string>
@@ -38,32 +34,28 @@
     <string name="preview">Preview</string>
     <string name="preview_note">What the lock screen would show now</string>
     <string name="preview_empty">Nothing to show now. The panel stays off the lock screen until there is.</string>
-    <string name="preview_off">The panel is off, so the lock screen shows none of this until it is turned on in Accessibility.</string>
+    <string name="preview_off">The panel is off, so the lock screen shows none of this until \"Glance on the lock screen\" is turned on in Accessibility.</string>
     <!-- Today\'s events, read by Glance itself -->
     <string name="today_heading">Today</string>
     <string name="today_all_day">All day</string>
     <!-- An event under way since before today: "until 11:00" -->
     <string name="today_until">until %1$s</string>
     <string name="today_untitled">(No title)</string>
-    <string name="sources_note">Each is switched on or off in that app\'s own settings. Hold one and drag it to change the order, or hold and let go to move it up or down. When there is not room for all of them, the ones at the top are shown.</string>
-    <string name="unread_together">These two and other apps\' counts move together.</string>
     <!-- The title of the Move up / Move down menu for the Messaging and Email row -->
     <string name="unread_title">Unread: Messaging, Email and other apps</string>
     <string name="order_title">Order</string>
     <string name="order_note">The top ones are shown when there is not room for all</string>
     <string name="order_page_note">When there is not room on the lock screen for all of them, the ones at the top are shown.</string>
-    <string name="own_settings_note">Calendar, Sky, Messaging and Email are switched on or off in their own settings.</string>
+    <string name="own_settings_note">Each app also has its own lock-screen switch in its own settings. A line shows only when both are on.</string>
+    <string name="unread_others">Other apps\' notifications</string>
+    <string name="unread_others_note">Counted at the foot of the panel</string>
     <string name="not_installed">Not installed: %1$s</string>
     <string name="access_title">Notification access</string>
     <string name="access_on_short">On: other apps\' notifications are counted.</string>
-    <string name="move_top">Move to top</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
     <string name="others_heading">Other apps\' notifications</string>
-    <string name="access_off">Notifications are not counted</string>
     <string name="access_off_note">Turn on notification access for Glance to count other apps\' notifications.</string>
-    <string name="access_on">Notifications are counted</string>
-    <string name="access_on_note">Turn it off in notification access.</string>
     <string name="choose_apps">Choose apps</string>
     <string name="chosen_none">None chosen</string>
     <!-- How many apps have their notifications counted: "3 chosen" -->
@@ -81,7 +73,7 @@
     <string name="torch">Power pressed twice</string>
     <!-- On the lock-screen panel while the torch is on; pressing it turns the torch off -->
     <string name="torch_on_line">Torch on. Press to turn off.</string>
-    <string name="torch_note">Two quick presses of the power key turn the torch on or off, even while the phone is locked. While it is on, the lock screen says so; press that line to turn it off. Needs Glance switched on in Accessibility.</string>
+    <string name="torch_note">Two quick presses of the power key turn the torch on or off, even while the phone is locked. While it is on, the lock screen says so; press that line to turn it off. Needs \"Glance on the lock screen\" switched on in Accessibility.</string>
 
     <!-- On the panel, when there were more of today's events than room: "+2 more" -->
     <string name="panel_more">+%1$d more</string>
@@ -90,20 +82,28 @@
 
     <!-- The accessibility service, as Android's Accessibility settings show it -->
     <string name="service_label">Glance on the lock screen</string>
-    <string name="service_description">Shows today\'s events, the weather and what is unread on the lock screen, from Calendar, Sky, Messaging and Email, and how many notifications the apps you choose have waiting. Without Calendar, it can read today\'s events itself if you turn that on. It reads the lock screen only to see where its own items end and whether the PIN pad is up, and it has no network access.</string>
+    <string name="service_description">Shows today\'s events, the weather and what is unread on the lock screen, from the apps that hand it lines, and how many notifications the apps you choose have waiting. Without Calendar, it can read today\'s events itself if you turn that on. It reads the lock screen only to see where its own items end and whether the PIN pad is up, and it has no network access.</string>
     <!-- Android's notification access list -->
     <string name="listener_label">Glance: count notifications</string>
 
     <!-- About dialog. Keep the names of the app, people, projects and licences as they are -->
     <string name="about_title">Glance %1$s</string>
-    <string name="about_privacy">It shows what Calendar, Sky, Messaging and Email hand it, and only when their own settings allow. With notification access on, it counts the notifications of the apps you choose, and reads what they say only if you turn that on. Without Calendar, it reads today\'s events from Mudita\'s Calendar and, with calendar access, the phone\'s other calendars, only if you turn that on. It has no network access.</string>
+    <string name="about_privacy_heading">Privacy</string>
+    <string name="about_privacy_1">Glance has no internet access, so nothing is sent anywhere and nothing is collected about you. It keeps only your choices on this phone: the order, the apps you chose and its switches.</string>
+    <string name="about_privacy_2">It puts on the lock screen what Calendar, Sky and your other apps hand it, and the phone\'s lock does not hide it: anyone holding the phone can read today\'s events, the weather and what is unread. Each app\'s own switch decides what it hands over.</string>
+    <string name="about_privacy_3">With notification access on, it reads the notifications of the apps you choose to count them, and what they say only if you turn on Show what they say. Without Calendar, it reads today\'s events from Mudita\'s Calendar and, if you allow calendar access, the phone\'s other calendars. As an accessibility service it reads the lock screen only to find where its own items end. With Power pressed twice on, it notes when the screen goes on and off to switch the torch, and keeps nothing of it. Ring for calls only adds a Do Not Disturb rule of its own. It hands the panel\'s lines to inkOS:wndr\'s home screen and to no other app.</string>
+    <string name="about_privacy_4">There are no ads, no analytics and no tracking.</string>
+    <string name="about_terms_heading">Terms</string>
+    <string name="about_terms">This app is free software under the GNU General Public License v3. It comes with no warranty: use it at your own risk.</string>
+    <string name="about_components_heading">Made with</string>
     <string name="about_after">The lock-screen overlay follows Katapult by gezimos, GPL 3.0.</string>
+    <string name="about_components">Mudita Mindful Design, Jetpack Compose and AndroidX, Apache 2.0.</string>
     <!-- The name of the app's licence -->
-    <string name="about_licence">GNU General Public License v3</string>
+    <string name="about_licence">Licence: GNU General Public License v3</string>
     <string name="about_source" translatable="false">https://github.com/wanderwildwood/hitome</string>
     <string name="about_icons">Icons from Material Symbols, Apache 2.0</string>
     <!-- The donation link label, beside a drawing of a llama. A fixed phrase: a verb and an object, so the reader knows what pressing it does -->
-    <string name="about_feed_the_llamas">feed the llamas</string>
+    <string name="about_feed_the_llamas">Feed the llamas</string>
     <string name="about_no_browser">There is no browser on this phone to open that with.</string>
     <string name="about_close">Close</string>
 

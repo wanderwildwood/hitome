@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.mudita.mmd.components.buttons.OutlinedButtonMMD
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.Scaffold
+import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.wanderwildwood.hitome.BuildConfig
 import android.content.Intent
@@ -18,6 +20,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Alignment
@@ -27,49 +31,69 @@ import androidx.compose.ui.res.stringResource
 import com.wanderwildwood.hitome.R
 
 /**
- * What this is, what it does with what it knows, and whose work it follows.
+ * What this is, what it does with what it knows, and whose work it follows - a page of its own,
+ * because Privacy and Terms are longer than a dialog can hold without scrolling.
  *
- * The line about what it reads is here because an accessibility service can read the screen,
- * and a stranger cannot tell from outside how much of it this one reads. It reads the lock
- * screen, to find where its own items end, and nothing else, and it has no network access.
+ * The privacy text says what an accessibility service and a notification listener could read,
+ * because a stranger cannot tell from outside how much this one reads. It has no network access.
  */
 @Composable
-fun AboutDialog(onDismiss: () -> Unit) {
-    EInkDialog(onDismiss = onDismiss) {
-        TextMMD(
-            text = stringResource(R.string.about_title, BuildConfig.VERSION_NAME),
-            style = MaterialTheme.typography.bodyLarge,
-            fontWeight = FontWeight.Medium,
-        )
-
-        Spacer(Modifier.height(14.dp))
-        TextMMD(
-            text = stringResource(R.string.about_privacy),
-            style = MaterialTheme.typography.labelSmall,
-        )
-
-        Spacer(Modifier.height(14.dp))
-        TextMMD(
-            text = stringResource(R.string.about_after),
-            style = MaterialTheme.typography.labelSmall,
-        )
-
-        Spacer(Modifier.height(14.dp))
-        TextMMD(text = stringResource(R.string.about_licence), style = MaterialTheme.typography.labelSmall)
-        TextMMD(text = stringResource(R.string.about_icons), style = MaterialTheme.typography.labelSmall)
-
-        Spacer(Modifier.height(14.dp))
-        TextMMD(text = stringResource(R.string.about_source), style = MaterialTheme.typography.labelSmall)
-
-        Spacer(Modifier.height(14.dp))
-        Llama()
-
-        Spacer(Modifier.height(18.dp))
-        OutlinedButtonMMD(
-            onClick = onDismiss,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
-        ) { TextMMD(text = stringResource(R.string.about_close), style = MaterialTheme.typography.bodySmall) }
+fun AboutScreen(onBack: () -> Unit) {
+    Scaffold(
+        containerColor = MaterialTheme.colorScheme.surface,
+        topBar = {
+            TopAppBarMMD(
+                title = { TextMMD(text = stringResource(R.string.about_title, BuildConfig.VERSION_NAME)) },
+                navigationIcon = { BarButton(Icons.Back, stringResource(R.string.cd_back), onBack) },
+            )
+        },
+    ) { padding ->
+        PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+            item { Spacer(Modifier.height(8.dp)) }
+            item {
+                AboutHeading(R.string.about_privacy_heading)
+                AboutText(R.string.about_privacy_1)
+            }
+            item { AboutText(R.string.about_privacy_2) }
+            item { AboutText(R.string.about_privacy_3) }
+            item { AboutText(R.string.about_privacy_4) }
+            item {
+                AboutHeading(R.string.about_terms_heading)
+                AboutText(R.string.about_terms)
+            }
+            item {
+                AboutHeading(R.string.about_components_heading)
+                AboutText(R.string.about_after)
+                AboutText(R.string.about_components)
+                AboutText(R.string.about_icons)
+            }
+            item {
+                AboutText(R.string.about_licence, Modifier.padding(top = 14.dp))
+                AboutText(R.string.about_source)
+            }
+            item { Llama() }
+            item { Spacer(Modifier.height(8.dp)) }
+        }
     }
+}
+
+@Composable
+private fun AboutHeading(text: Int) {
+    TextMMD(
+        text = stringResource(text),
+        style = MaterialTheme.typography.bodyMedium,
+        fontWeight = FontWeight.Bold,
+        modifier = Modifier.padding(top = 14.dp, bottom = 4.dp),
+    )
+}
+
+@Composable
+private fun AboutText(text: Int, modifier: Modifier = Modifier) {
+    TextMMD(
+        text = stringResource(text),
+        style = MaterialTheme.typography.labelSmall,
+        modifier = modifier.padding(vertical = 4.dp),
+    )
 }
 
 /**
@@ -104,7 +128,8 @@ private fun Llama() {
                         Toast.makeText(context, context.getString(R.string.about_no_browser), Toast.LENGTH_SHORT).show()
                     }
                 }
-                .padding(vertical = 4.dp),
+                .heightIn(min = 48.dp)
+                .wrapContentHeight(Alignment.CenterVertically),
         )
         Spacer(Modifier.width(6.dp))
         Row(
@@ -124,7 +149,7 @@ private fun Llama() {
                         Toast.makeText(context, context.getString(R.string.about_no_browser), Toast.LENGTH_SHORT).show()
                     }
                 }
-                .padding(vertical = 4.dp),
+                .heightIn(min = 48.dp),
         ) {
             Image(
                 painter = painterResource(R.drawable.llama),

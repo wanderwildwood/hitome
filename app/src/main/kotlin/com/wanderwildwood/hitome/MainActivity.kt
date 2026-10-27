@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.MaterialTheme
@@ -48,7 +49,7 @@ import com.wanderwildwood.hitome.ui.PagedColumn
 import com.wanderwildwood.hitome.ui.EInkDialog
 import com.wanderwildwood.hitome.ui.RestrictedHint
 import com.wanderwildwood.hitome.ui.RestrictedSettings
-import com.wanderwildwood.hitome.ui.AboutDialog
+import com.wanderwildwood.hitome.ui.AboutScreen
 import com.wanderwildwood.hitome.ui.BarButton
 import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.Icons
@@ -118,7 +119,7 @@ private fun MainScreen() {
     var ordering by remember { mutableStateOf(false) }
 
     // A newer source without its app is not listed, and is stepped over when moving.
-    fun listed(key: String) = key !in Glance.OPT_IN || installed[key] == true
+    fun listed(key: String) = Glance.listed(key, installed, access)
 
     @Composable
     fun SourceRow(pkg: String, label: Int) {
@@ -164,6 +165,11 @@ private fun MainScreen() {
         Row(title = stringResource(label), value = null, chevron = true) {
             context.packageManager.getLaunchIntentForPackage(pkg)?.let { context.startActivity(it) }
         }
+    }
+    if (aboutOpen) {
+        BackHandler { aboutOpen = false }
+        AboutScreen { aboutOpen = false }
+        return
     }
     if (choosing) {
         BackHandler { choosing = false }
@@ -242,6 +248,9 @@ private fun MainScreen() {
                     if (i == 0) Heading(stringResource(R.string.sources_heading))
                     if (key == Glance.UNREAD) {
                         UNREAD_SOURCES.forEach { (pkg, label) -> SourceRow(pkg, label) }
+                        if (UNREAD_SOURCES.none { installed[it.first] == true }) {
+                            Row(title = stringResource(R.string.unread_others), value = stringResource(R.string.unread_others_note)) {}
+                        }
                     } else {
                         SourceRow(key, SOURCES.getValue(key))
                     }
@@ -310,6 +319,7 @@ private fun MainScreen() {
                 }
             }
             item {
+                Heading(stringResource(R.string.sound_heading))
                 SwitchRow(
                     title = stringResource(R.string.quiet),
                     note = stringResource(if (access) R.string.quiet_note else R.string.quiet_needs_access),
@@ -338,10 +348,9 @@ private fun MainScreen() {
             }
         }
     }
-    if (aboutOpen) AboutDialog { aboutOpen = false }
     if (pickingSize) {
         EInkDialog(onDismiss = { pickingSize = false }) {
-            TextMMD(text = stringResource(R.string.text_size), style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+            TextMMD(text = stringResource(R.string.text_size), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(6.dp))
             TEXT_SIZE_NAMES.forEachIndexed { i, name ->
                 androidx.compose.foundation.layout.Row(
@@ -349,7 +358,7 @@ private fun MainScreen() {
                         textSize = i
                         Glance.setTextSize(context, i)
                         pickingSize = false
-                    }.padding(vertical = 8.dp),
+                    }.heightIn(min = 48.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     RadioButtonMMD(selected = i == textSize, onClick = null)
@@ -364,11 +373,11 @@ private fun MainScreen() {
 /** The names of [Glance.TEXT_SCALES], in the same order. */
 private val TEXT_SIZE_NAMES = listOf(R.string.text_size_normal, R.string.text_size_large, R.string.text_size_larger)
 
-/** A section's name, in bold capitals over a rule, so the screen reads as its parts. */
+/** A section's name, in bold over a rule, so the screen reads as its parts. */
 @Composable
 private fun Heading(text: String) {
     Column(Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 2.dp)) {
-        TextMMD(text = text.uppercase(), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+        TextMMD(text = text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
         HorizontalDividerMMD()
     }
@@ -427,7 +436,7 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
 @Composable
 private fun Row(title: String, value: String?, chevron: Boolean = false, onClick: () -> Unit) {
     androidx.compose.foundation.layout.Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -540,7 +549,7 @@ private fun ChooseAppsScreen(onBack: () -> Unit) {
 @Composable
 private fun SwitchRow(title: String, note: String?, checked: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 12.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
