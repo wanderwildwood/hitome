@@ -92,7 +92,7 @@ fun GlancePanel(
                         Column(Modifier.fillMaxWidth().clickable { onOpen(section.packageName) }.padding(vertical = 2.dp)) {
                             section.heading?.let {
                                 TextMMD(
-                                    text = it.uppercase(),
+                                    text = it,
                                     style = MaterialTheme.typography.labelSmall,
                                     fontWeight = FontWeight.Bold,
                                     maxLines = 1,

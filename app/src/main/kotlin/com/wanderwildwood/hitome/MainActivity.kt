@@ -39,7 +39,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import com.mudita.mmd.ThemeMMD
-import com.mudita.mmd.components.divider.HorizontalDividerMMD
 import androidx.compose.ui.text.font.FontWeight
 import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.radio_button.RadioButtonMMD
@@ -373,13 +372,12 @@ private fun MainScreen() {
 /** The names of [Glance.TEXT_SCALES], in the same order. */
 private val TEXT_SIZE_NAMES = listOf(R.string.text_size_normal, R.string.text_size_large, R.string.text_size_larger)
 
-/** A section's name, in bold over a rule, so the screen reads as its parts. */
+/** A section's name, in bold, set apart by space so the screen reads as its parts. */
 @Composable
 private fun Heading(text: String) {
-    Column(Modifier.fillMaxWidth().padding(top = 22.dp, bottom = 2.dp)) {
+    Column(Modifier.fillMaxWidth().padding(top = 28.dp, bottom = 2.dp)) {
         TextMMD(text = text, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
-        HorizontalDividerMMD()
     }
 }
 
@@ -409,7 +407,7 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
             keys.forEachIndexed { i, key ->
                 item(key = key) {
                     androidx.compose.foundation.layout.Row(
-                        Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                        Modifier.fillMaxWidth().padding(vertical = 6.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextMMD(
@@ -425,7 +423,6 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
                             if (i < keys.size - 1) BarButton(Icons.Down, stringResource(R.string.move_down)) { onMove(key, 1) }
                         }
                     }
-                    HorizontalDividerMMD()
                 }
             }
         }
