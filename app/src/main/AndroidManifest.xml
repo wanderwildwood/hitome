@@ -19,6 +19,11 @@
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
 
     <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="https" />
+        </intent>
         <package android:name="com.wanderwildwood.zatsuno" />
         <package android:name="com.wanderwildwood.koyomi" />
         <package android:name="com.wanderwildwood.fukuyaku" />

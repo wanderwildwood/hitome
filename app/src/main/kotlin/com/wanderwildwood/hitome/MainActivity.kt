@@ -109,9 +109,11 @@ private fun MainScreen() {
         if (!granted && context is ComponentActivity &&
             !context.shouldShowRequestPermissionRationale(android.Manifest.permission.READ_CALENDAR)
         ) {
-            context.startActivity(
-                Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", context.packageName, null)),
-            )
+            runCatching {
+                context.startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, android.net.Uri.fromParts("package", context.packageName, null)),
+                )
+            }
         }
     }
 
@@ -163,7 +165,7 @@ private fun MainScreen() {
         if (!here) return
         // Switched on or off in the app itself, so the row is a door to it.
         Row(title = stringResource(label), value = null, chevron = true) {
-            context.packageManager.getLaunchIntentForPackage(pkg)?.let { context.startActivity(it) }
+            context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
         }
     }
     if (aboutOpen) {
@@ -222,7 +224,7 @@ private fun MainScreen() {
                             stringResource(R.string.service_off),
                             {
                                 askedService = true
-                                context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
+                                runCatching { context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
                             },
                             Modifier.fillMaxWidth().padding(top = 8.dp),
                         )

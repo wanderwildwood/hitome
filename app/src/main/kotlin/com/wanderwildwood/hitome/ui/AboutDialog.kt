@@ -1,6 +1,5 @@
 package com.wanderwildwood.hitome.ui
 
-import android.widget.Toast
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -14,8 +13,15 @@ import androidx.compose.material3.Scaffold
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.wanderwildwood.hitome.BuildConfig
-import android.content.Intent
-import android.net.Uri
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Row
@@ -39,6 +45,8 @@ import com.wanderwildwood.hitome.R
  */
 @Composable
 fun AboutScreen(onBack: () -> Unit) {
+    var licences by rememberSaveable { mutableStateOf(false) }
+    BackHandler(enabled = licences) { licences = false }
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
@@ -48,6 +56,12 @@ fun AboutScreen(onBack: () -> Unit) {
             )
         },
     ) { padding ->
+        if (licences) {
+            Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 8.dp)) {
+                LicencesPage(onBack = { licences = false }, room = LocalConfiguration.current.screenHeightDp.dp - 220.dp)
+            }
+            return@Scaffold
+        }
         PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
             item { Spacer(Modifier.height(8.dp)) }
             item {
@@ -69,12 +83,31 @@ fun AboutScreen(onBack: () -> Unit) {
             }
             item {
                 AboutText(R.string.about_licence, Modifier.padding(top = 14.dp))
-                AboutText(R.string.about_source)
+                AboutLink(SOURCE_URL.removePrefix("https://"), SOURCE_URL)
+                TextMMD(
+                    text = stringResource(R.string.about_licences),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.fillMaxWidth().clickable { licences = true }.heightIn(min = 48.dp).wrapContentHeight(Alignment.CenterVertically),
+                )
             }
             item { Llama() }
             item { Spacer(Modifier.height(8.dp)) }
         }
     }
+}
+
+@Composable
+private fun AboutLink(label: String, address: String) {
+    val context = LocalContext.current
+    TextMMD(
+        text = label,
+        style = MaterialTheme.typography.labelSmall,
+        textDecoration = TextDecoration.Underline,
+        modifier = Modifier.fillMaxWidth()
+            .clickable { openLink(context, address, context.getString(R.string.about_no_browser_address, label)) }
+            .heightIn(min = 48.dp).wrapContentHeight(Alignment.CenterVertically),
+    )
 }
 
 @Composable
@@ -120,13 +153,7 @@ private fun Llama() {
             // The site's address opens the site, the way the llama beside it opens its page.
             modifier = Modifier
                 .clickable {
-                    runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("https://wanderthe.dev")),
-                        )
-                    }.onFailure {
-                        Toast.makeText(context, context.getString(R.string.about_no_browser), Toast.LENGTH_SHORT).show()
-                    }
+                    openLink(context, "https://wanderthe.dev", context.getString(R.string.about_no_browser_address, "wanderthe.dev"))
                 }
                 .heightIn(min = 48.dp)
                 .wrapContentHeight(Alignment.CenterVertically),
@@ -141,13 +168,7 @@ private fun Llama() {
                     // The short square.link form, not the long checkout.square.site address it
                     // redirects to -- the short one is what the site itself links to, so a
                     // regenerated checkout follows it and a published app does not break.
-                    runCatching {
-                        context.startActivity(
-                            Intent(Intent.ACTION_VIEW, Uri.parse("https://square.link/u/AGu8oT10")),
-                        )
-                    }.onFailure {
-                        Toast.makeText(context, context.getString(R.string.about_no_browser), Toast.LENGTH_SHORT).show()
-                    }
+                    openLink(context, "https://square.link/u/AGu8oT10", context.getString(R.string.about_no_browser_address, "square.link/u/AGu8oT10"))
                 }
                 .heightIn(min = 48.dp),
         ) {
