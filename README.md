@@ -7,8 +7,8 @@ day can be seen without unlocking the phone.
 
 | | |
 |---|---|
-| ![On the lock screen](screenshots/1-lockscreen.png) | ![Glance itself](screenshots/2-app.png) |
-| ![Preview](screenshots/3-preview.png) | ![Choosing apps to count](screenshots/4-choose-apps.png) |
+| ![Glance: the switches for each part](screenshots/1-app.png) | ![The order, and the other apps' notifications](screenshots/2-more.png) |
+| ![Preview](screenshots/3-preview.png) | ![About: Privacy, with the page number in the corner](screenshots/4-about.png) |
 
 ## What it shows
 
