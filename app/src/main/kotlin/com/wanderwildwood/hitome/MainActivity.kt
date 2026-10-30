@@ -84,7 +84,7 @@ private fun MainScreen() {
     }
     val serviceOn = remember(checks) { serviceEnabled(context) }
     val installed = remember(checks) {
-        Glance.SOURCES.associateWith { context.packageManager.getLaunchIntentForPackage(it) != null }
+        Glance.SOURCES.associateWith { Glance.installed(context.packageManager, it) }
     }
     val access = remember(checks) { Notices.accessGranted(context) }
     // Asked for and still off on the way back: on Android 13+ that is restricted settings.

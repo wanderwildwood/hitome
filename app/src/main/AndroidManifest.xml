@@ -26,6 +26,7 @@
         <package android:name="com.wanderwildwood.oboegaki" />
         <package android:name="com.wanderwildwood.satsuire" />
         <package android:name="com.wanderwildwood.jimeikin" />
+        <package android:name="com.wanderwildwood.jimeikin.k" />
         <package android:name="com.wanderwildwood.mimidoku" />
         <package android:name="com.wanderwildwood.zeni" />
         <package android:name="com.wanderwildwood.kotozute" />

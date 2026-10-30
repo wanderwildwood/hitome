@@ -50,4 +50,39 @@ class PanelForHomeTest {
         assertEquals(true, Glance.listed(Glance.UNREAD, emptyMap(), true))
         assertEquals(true, Glance.listed(Glance.UNREAD, mapOf("com.wanderwildwood.tayori" to true), false))
     }
+
+    private fun music(pkg: String, playing: Boolean?) =
+        Glance.Section(pkg, null, listOf(Glance.Line("Playing", "Song", false)), key = Glance.MUSIC, playing = playing)
+
+    @Test
+    fun musicBoxAndMusicBoxKShareOnePlace() {
+        assertEquals(listOf(Glance.MUSIC, Glance.MUSIC_K), Glance.providers(Glance.MUSIC))
+        assertEquals(listOf(Glance.SKY), Glance.providers(Glance.SKY))
+        assertEquals("com.wanderwildwood.jimeikin.k", Glance.MUSIC_K)
+    }
+
+    @Test
+    fun theOnePlayingIsShownWhenBothAreInstalled() {
+        val full = music(Glance.MUSIC, false)
+        val k = music(Glance.MUSIC_K, true)
+        assertEquals(Glance.MUSIC_K, Glance.pickPlaying(listOf(full, k))?.packageName)
+        assertEquals(Glance.MUSIC, Glance.pickPlaying(listOf(music(Glance.MUSIC, true), k))?.packageName)
+        // Neither says; the first with lines wins. One alone is shown whether or not it says.
+        assertEquals(Glance.MUSIC, Glance.pickPlaying(listOf(music(Glance.MUSIC, null), music(Glance.MUSIC_K, null)))?.packageName)
+        assertEquals(Glance.MUSIC_K, Glance.pickPlaying(listOf(null, music(Glance.MUSIC_K, null)))?.packageName)
+        assertNull(Glance.pickPlaying(listOf(null, null)))
+    }
+
+    @Test
+    fun theAnswerForTheMusicPlaceIsTheOneWithTheSong() {
+        val none = PanelForHome.Answer(PanelForHome.OFF_APP)
+        val missing = PanelForHome.Answer(PanelForHome.NOT_INSTALLED)
+        val kPlaying = PanelForHome.Answer(PanelForHome.ON, music(Glance.MUSIC_K, true))
+        assertEquals(kPlaying, PanelForHome.chooseAnswer(listOf(PanelForHome.Answer(PanelForHome.ON, music(Glance.MUSIC, false)), kPlaying)))
+        assertEquals(kPlaying, PanelForHome.chooseAnswer(listOf(missing, kPlaying)))
+        // Nothing playing: the more telling status, not "not installed" while one of them is.
+        assertEquals(none, PanelForHome.chooseAnswer(listOf(none, missing)))
+        assertEquals(none, PanelForHome.chooseAnswer(listOf(missing, none)))
+        assertEquals(missing, PanelForHome.chooseAnswer(listOf(missing, missing)))
+    }
 }

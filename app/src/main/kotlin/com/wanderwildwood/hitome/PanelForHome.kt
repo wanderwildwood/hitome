@@ -144,6 +144,12 @@ class PanelForHome : ContentProvider() {
 
     /** What [pkg] has to say, as [Glance.readAll] would read it, and why. */
     private fun answer(context: Context, pkg: String, calendarInstalled: Boolean, signal: CancellationSignal): Answer {
+        val from = Glance.providers(pkg)
+        if (from.size == 1) return answerOne(context, pkg, calendarInstalled, signal)
+        return chooseAnswer(from.map { answerOne(context, it, calendarInstalled, signal) })
+    }
+
+    private fun answerOne(context: Context, pkg: String, calendarInstalled: Boolean, signal: CancellationSignal): Answer {
         val pm = context.packageManager
         if (pkg == Glance.CALENDAR && !calendarInstalled) {
             // Glance's own reading of today takes Calendar's place, as on the lock screen.
@@ -250,6 +256,14 @@ class PanelForHome : ContentProvider() {
         }
 
         /** [pkg]'s rows: one per line, or one with no text that carries only its status. */
+        /** Of several apps' answers for one place: the one playing, else one with lines, else the most telling status. */
+        fun chooseAnswer(answers: List<Answer>): Answer {
+            val section = Glance.pickPlaying(answers.map { it.section })
+            if (section != null) return answers.first { it.section === section }
+            val order = listOf(OFF_APP, OFF_GLANCE, NEEDS_UPDATE, NO_ANSWER, NOT_INSTALLED)
+            return answers.minByOrNull { order.indexOf(it.status).let { i -> if (i < 0) order.size else i } } ?: Answer(NOT_INSTALLED)
+        }
+
         fun rowsFor(pkg: String, answer: Answer): List<Array<Any?>> {
             val section = answer.section
             if (section == null || section.lines.isEmpty()) return listOf(arrayOf(pkg, null, null, null, 0, answer.status))

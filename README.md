@@ -36,7 +36,8 @@ change it:
   [Audiobooks](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
   book and its chapter (or the time left in a book with no chapters), and whether it is paused.
   Nothing once playback stops, and nothing while that app's own lock-screen controls are on,
-  since they already say it.
+  since they already say it. Music Box K, the store edition, answers in the same place; when both
+  are installed, the one that is playing is shown.
 - **The bitcoin price**, from [Bitcoin](https://github.com/wanderwildwood/zeni), off until
   switched on in both Bitcoin's App Settings and Glance: the price and how it moved in a day.
   Never a balance.

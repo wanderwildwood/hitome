@@ -30,7 +30,30 @@ object Glance {
         val heading: String?,
         val lines: List<Line>,
         val key: String = if (packageName in COUNTS) UNREAD else packageName,
+        /** For a player: whether it is playing now, when it says (null: it did not say). */
+        val playing: Boolean? = null,
     )
+
+    /** Music Box, whose place on the panel is also taken by Music Box K when that is the one playing. */
+    const val MUSIC = "com.wanderwildwood.jimeikin"
+    const val MUSIC_K = "com.wanderwildwood.jimeikin.k"
+
+    /** The apps that can fill [pkg]'s place: itself, and for the music place both Music Boxes. */
+    fun providers(pkg: String): List<String> = if (pkg == MUSIC) listOf(MUSIC, MUSIC_K) else listOf(pkg)
+
+    /**
+     * Of the answers from [providers], the one to draw: the one that is playing, else the first
+     * that has lines. Null when none has. Music Box and Music Box K can both be installed and
+     * both hold a song, so a paused one never hides the one that is sounding.
+     */
+    fun pickPlaying(sections: List<Section?>): Section? {
+        val have = sections.filterNotNull()
+        return have.firstOrNull { it.playing == true } ?: have.firstOrNull()
+    }
+
+    /** Whether the app for [pkg]'s place is on the phone; for the music place, either Music Box. */
+    fun installed(pm: android.content.pm.PackageManager, pkg: String): Boolean =
+        providers(pkg).any { pm.getLaunchIntentForPackage(it) != null }
 
     /**
      * Stacked sections, top to bottom until the order is changed: the emergency card, today's
@@ -97,7 +120,8 @@ object Glance {
     fun ownControlsOn(context: Context, packageName: String): Boolean {
         val enabled = Settings.Secure.getString(context.contentResolver, Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES)
             ?: return false
-        return enabled.split(':').any { ComponentName.unflattenFromString(it)?.packageName == packageName }
+        val wanted = providers(packageName)
+        return enabled.split(':').any { ComponentName.unflattenFromString(it)?.packageName in wanted }
     }
 
     fun uri(packageName: String): Uri = Uri.parse("content://$packageName.glance/lines")
@@ -210,7 +234,12 @@ object Glance {
         context.packageManager.getLaunchIntentForPackage(CALENDAR) != null
 
     /** Null when the app is not installed, has nothing to say, or has its switch off. */
-    fun read(context: Context, packageName: String): Section? = try {
+    fun read(context: Context, packageName: String): Section? {
+        val from = providers(packageName)
+        return if (from.size == 1) readOne(context, packageName) else pickPlaying(from.map { readOne(context, it) })
+    }
+
+    private fun readOne(context: Context, packageName: String): Section? = try {
         context.contentResolver.query(uri(packageName), COLUMNS, null, null, null)?.use { c -> section(c, packageName) }
     } catch (_: Exception) {
         // Not installed, too old to have a provider, or it refused: in every case, nothing.
@@ -223,20 +252,23 @@ object Glance {
         val lead = c.getColumnIndex("lead")
         val text = c.getColumnIndex("text")
         val bold = c.getColumnIndex("bold")
+        val playingAt = c.getColumnIndex("playing")
         if (text < 0) return null
+        var playing: Boolean? = null
         var title: String? = null
         val lines = mutableListOf<Line>()
         while (c.moveToNext()) {
             if (title == null && heading >= 0) title = c.getString(heading)?.takeIf { it.isNotBlank() }
             val t = c.getString(text)?.takeIf { it.isNotBlank() } ?: continue
+            if (playingAt >= 0 && playing == null && !c.isNull(playingAt)) playing = c.getInt(playingAt) == 1
             lines += Line(
                 lead = if (lead >= 0) c.getString(lead)?.takeIf { it.isNotBlank() } else null,
                 text = t,
                 bold = bold >= 0 && c.getInt(bold) == 1,
             )
         }
-        return if (lines.isEmpty()) null else Section(packageName, title, lines)
+        return if (lines.isEmpty()) null else Section(packageName, title, lines, playing = playing)
     }
 
-    val COLUMNS = arrayOf("heading", "lead", "text", "bold")
+    val COLUMNS = arrayOf("heading", "lead", "text", "bold", "playing")
 }
