@@ -46,6 +46,7 @@ import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
 import com.wanderwildwood.hitome.ui.PagedColumn
 import com.wanderwildwood.hitome.ui.EInkDialog
+import com.wanderwildwood.hitome.ui.HouseButton
 import com.wanderwildwood.hitome.ui.RestrictedHint
 import com.wanderwildwood.hitome.ui.RestrictedSettings
 import com.wanderwildwood.hitome.ui.AboutScreen
@@ -216,19 +217,20 @@ private fun MainScreen() {
             // Said only while there is something to do about it.
             if (!serviceOn) {
                 item {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp)
-                            .border(2.dp, MaterialTheme.colorScheme.onSurface)
-                            .clickable {
+                    Column {
+                        HouseButton(
+                            stringResource(R.string.service_off),
+                            {
                                 askedService = true
                                 context.startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-                            }
-                            .padding(14.dp),
-                    ) {
-                        TextMMD(text = stringResource(R.string.service_off), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
-                        TextMMD(text = stringResource(R.string.service_off_note), style = MaterialTheme.typography.labelSmall)
+                            },
+                            Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
+                        TextMMD(
+                            text = stringResource(R.string.service_off_note),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(top = 6.dp, bottom = 8.dp),
+                        )
                     }
                 }
                 if (askedService && restricted) item { RestrictedHint() }
