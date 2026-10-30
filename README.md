@@ -1,7 +1,8 @@
 # 一目 hitome — Glance
 
-Today's events, the weather and what is unread, on the lock screen of a Mudita Kompakt, so the
-day can be seen without unlocking the phone.
+Today's events, the next dose, the weather, pinned notes and what is unread, on the lock screen of
+a Mudita Kompakt, so the day can be seen without unlocking the phone. Each line is handed over by
+the app it belongs to, and each has its own switch.
 
 *Hitome* is 一目 — one look, a glance.
 
