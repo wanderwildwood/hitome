@@ -58,11 +58,11 @@ fun AboutScreen(onBack: () -> Unit) {
     ) { padding ->
         if (licences) {
             Column(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp, vertical = 8.dp)) {
-                LicencesPage(onBack = { licences = false }, room = LocalConfiguration.current.screenHeightDp.dp - 220.dp)
+                LicencesScreen(rememberLicencesData(), rememberLicencesLabels(), onBack = { licences = false }, modifier = Modifier.fillMaxWidth().height(LocalConfiguration.current.screenHeightDp.dp - 220.dp))
             }
             return@Scaffold
         }
-        PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        PagedColumn(Modifier.fillMaxSize().padding(padding), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 12.dp)) {
             item { Spacer(Modifier.height(8.dp)) }
             item {
                 AboutHeading(R.string.about_privacy_heading)

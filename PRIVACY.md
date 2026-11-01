@@ -1,19 +1,19 @@
 # Privacy
 
 Glance shows on the lock screen what the apps that take part hand it and, if you turn it on, how
-many notifications the apps you choose have waiting. On a phone without Calendar it can read
+many notifications the apps you choose have waiting. On a phone without Datebook it can read
 today's events itself, if you turn that on. It has no network access and sends nothing anywhere.
 
 ## What it reads
 
-- **The lines the apps hand it.** Field Kit, Calendar, Medicine, Sky, Notes, Wallet, Music Box,
-  Audiobooks, Bitcoin, Messaging and Email each keep a small provider that answers Glance alone: the
+- **The lines the apps hand it.** Field Kit, Datebook, Medicine, Sky, Memo, Wallet, Music Box,
+  Audio Reader, Bitcoin, Messaging and Mailbox each keep a small provider that answers Glance alone: the
   emergency card's ticked fields, today's event titles and times, the next dose, the weather,
   pinned notes, the names of today's tickets, what is playing, the bitcoin price, and two unread counts - never a
   message, a sender or a subject. Each app hands over nothing while its own lock-screen switch
   is off.
-- **Today's events, without Calendar - only if you turn it on.** On a phone without
-  [Calendar](https://github.com/wanderwildwood/koyomi), **Today's events** (off until you turn it
+- **Today's events, without Datebook - only if you turn it on.** On a phone without
+  [Datebook](https://github.com/wanderwildwood/koyomi), **Today's events** (off until you turn it
   on) reads what is left of today, titles and times only. From Mudita's own Calendar, which
   answers any app that asks, so this needs no permission. And from the phone's other calendars
   (DAVx5, Etar, anything that syncs), which need calendar access: Glance asks for it when you
@@ -32,9 +32,9 @@ today's events itself, if you turn that on. It has no network access and sends n
   hide a notification's content on the lock screen - the phone set to hide private content, and
   the notification or its channel marked private - Glance shows its public version or nothing
   but the count. Left uncounted: ongoing ones (a player, a download), a
-  group's summary, and anything the app or you have marked secret on the lock screen. Calendar,
-  Sky, Messaging and Email are never counted this way; they have their own place on the panel.
-  With **Show what they say** on, Messaging's and Email's newest notification is read too, for
+  group's summary, and anything the app or you have marked secret on the lock screen. Datebook,
+  Sky, Messaging and Mailbox are never counted this way; they have their own place on the panel.
+  With **Show what they say** on, Messaging's and Mailbox's newest notification is read too, for
   its words only, under the same rules. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Notices.kt`.
 - **Do Not Disturb, only if you turn on Ring for calls only.** Glance then adds one Do Not
@@ -59,7 +59,7 @@ Glance hands the panel's lines to one app only, inkOS:wndr (`com.wanderwildwood.
 on its home screen, and only when that app is signed with inkOS:wndr's own release certificate:
 the same lines from the apps that take part, in your order and with your switches here, and for
 each app whether it shows and why (on, off in the app, off in Glance, not installed, needs an
-update, did not answer); and, when today's events are on here on a phone without Calendar, the
+update, did not answer); and, when today's events are on here on a phone without Datebook, the
 events Glance reads from the phone's calendars. Never other apps' notifications. Any other app that asks gets nothing.
 The code is `app/src/main/kotlin/com/wanderwildwood/hitome/PanelForHome.kt`.
 
@@ -75,7 +75,7 @@ aapt2 dump badging hitome.apk | grep uses-permission
 ```
 
 prints two lines. `android.permission.READ_CALENDAR` is calendar access, asked for only when you
-turn on **Today's events** on a phone without Calendar, and never otherwise.
+turn on **Today's events** on a phone without Datebook, and never otherwise.
 `com.wanderwildwood.hitome.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` is not a permission over
 anything on the phone: AndroidX declares it inside every app built against it, so that the app's
 own internal broadcasts cannot be sent by anyone else, and it names Glance itself. Notification

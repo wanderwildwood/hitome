@@ -18,10 +18,10 @@ change it:
 
 - **The emergency card**, from Field Kit, once its "Show on the lock screen" is on: the
   fields left ticked on the card, allergies and conditions in bold.
-- **Today**, from [Calendar](https://github.com/wanderwildwood/koyomi): all-day events first,
+- **Today**, from [Datebook](https://github.com/wanderwildwood/koyomi): all-day events first,
   then what is still to come, with times. When there is not room for them all, it shows the
-  first and how many more. Once today's are over, Calendar can name the next event, with its
-  day, if that is switched on in its settings. Without Calendar, turn on **Today's events** in Glance and it reads
+  first and how many more. Once today's are over, Datebook can name the next event, with its
+  day, if that is switched on in its settings. Without Datebook, turn on **Today's events** in Glance and it reads
   today itself: from Mudita's own Calendar, and from the phone's other calendars if you allow
   calendar access.
 - **The next dose**, from [Medicine](https://github.com/wanderwildwood/fukuyaku), once
@@ -29,12 +29,12 @@ change it:
   in bold, then the next one due.
 - **The weather**, from [Sky](https://github.com/wanderwildwood/soramoyo): the temperature
   now, the day's high and low, and a line when rain or snow is likely soon.
-- **Pinned notes**, from [Notes](https://github.com/wanderwildwood/oboegaki): each by its title,
+- **Pinned notes**, from [Memo](https://github.com/wanderwildwood/oboegaki): each by its title,
   and a list with how much of it is left, "Groceries · 3 to do".
 - **Today's tickets**, from [Wallet](https://github.com/wanderwildwood/satsuire): the names of
   the cards good for today, a boarding pass on the day of the flight. Never the barcode.
 - **What is playing**, from [Music Box](https://github.com/wanderwildwood/jimeikin) and
-  [Audiobooks](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
+  [Audio Reader](https://github.com/wanderwildwood/mimidoku): the song and who sings it, or the
   book and its chapter (or the time left in a book with no chapters), and whether it is paused.
   Nothing once playback stops, and nothing while that app's own lock-screen controls are on,
   since they already say it. Music Box K, the store edition, answers in the same place; when both
@@ -43,13 +43,13 @@ change it:
   switched on in both Bitcoin's App Settings and Glance: the price and how it moved in a day.
   Never a balance.
 - **Unread**, from [Messaging](https://github.com/wanderwildwood/kotozute) and
-  [Email](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
+  [Mailbox](https://github.com/wanderwildwood/tayori): "2 messages · 1 email", and nothing when
   nothing is unread.
 - **Other apps**, if you want them: the name of each app you choose and how many notifications
   it has waiting - "Signal 2 · Clock 1" - on up to two lines. What they say stays off the lock
   screen unless you turn on **Show what they say**; then each app gets a line with its newest
   notification, "Signal 2  Mom: see you at five", except where Android itself would hide it.
-  Messaging and Email then get a line of their words too, under their counts.
+  Messaging and Mailbox then get a line of their words too, under their counts.
 
 Pressing a section, or an app's name, unlocks the phone and opens that app.
 
@@ -64,7 +64,7 @@ choose.
 
 It measures where the lock screen's own items end - the date, the charging line, Mudita's music
 player - and starts below the lowest, each time the screen wakes. It stops above the strip Music
-Box and Audiobooks draw near the foot of the screen, and above the padlock.
+Box and Audio Reader draw near the foot of the screen, and above the padlock.
 
 The parts are drawn in the order they are listed under **What it shows** in Glance, which is
 the order above until you change it: hold a row and drag it, or hold and let go for **Move to

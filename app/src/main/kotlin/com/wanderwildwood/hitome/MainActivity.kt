@@ -214,7 +214,7 @@ private fun MainScreen() {
             )
         },
     ) { padding ->
-        PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        PagedColumn(Modifier.fillMaxSize().padding(padding), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 12.dp)) {
             item { Spacer(Modifier.height(8.dp)) }
             // Said only while there is something to do about it.
             if (!serviceOn) {
@@ -400,7 +400,7 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
             )
         },
     ) { padding ->
-        PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        PagedColumn(Modifier.fillMaxSize().padding(padding), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 12.dp)) {
             item {
                 TextMMD(
                     text = stringResource(R.string.order_page_note),
@@ -533,7 +533,7 @@ private fun ChooseAppsScreen(onBack: () -> Unit) {
             )
         },
     ) { padding ->
-        PagedColumn(Modifier.fillMaxSize().padding(padding).padding(horizontal = 20.dp)) {
+        PagedColumn(Modifier.fillMaxSize().padding(padding), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 12.dp)) {
             apps.forEach { (pkg, label) ->
                 item(key = pkg) {
                     val on = pkg in chosen
