@@ -9,7 +9,7 @@ the app it belongs to, and each has its own switch.
 | | |
 |---|---|
 | ![Glance: the switches for each part](screenshots/1-app.png) | ![The order, and the other apps' notifications](screenshots/2-more.png) |
-| ![Preview](screenshots/3-preview.png) | ![About: Privacy, with the page number in the corner](screenshots/4-about.png) |
+| ![Preview](screenshots/3-preview.png) | ![About: Privacy](screenshots/4-about.png) |
 
 ## What it shows
 
