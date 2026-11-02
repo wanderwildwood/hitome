@@ -49,7 +49,7 @@ import com.wanderwildwood.hitome.ui.EInkDialog
 import com.wanderwildwood.hitome.ui.HouseButton
 import com.wanderwildwood.hitome.ui.RestrictedHint
 import com.wanderwildwood.hitome.ui.RestrictedSettings
-import com.wanderwildwood.hitome.ui.AboutScreen
+import com.wanderwildwood.hitome.ui.AboutDialog
 import com.wanderwildwood.hitome.ui.BarButton
 import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.Icons
@@ -168,11 +168,7 @@ private fun MainScreen() {
             context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
         }
     }
-    if (aboutOpen) {
-        BackHandler { aboutOpen = false }
-        AboutScreen { aboutOpen = false }
-        return
-    }
+    if (aboutOpen) AboutDialog(onDismiss = { aboutOpen = false })
     if (choosing) {
         BackHandler { choosing = false }
         ChooseAppsScreen { choosing = false }
