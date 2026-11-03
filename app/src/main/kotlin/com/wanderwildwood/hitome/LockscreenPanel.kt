@@ -83,8 +83,11 @@ class LockscreenPanel(private val service: AccessibilityService) :
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
-            // Read afresh on every wake, so the panel is never older than the last look.
-            if (intent.action == Intent.ACTION_SCREEN_ON) {
+            // Read afresh on a wake only when the last read is old or the chosen apps changed
+            // (see ReadPacing). An app with new lines says so through [changes] and is read then.
+            if (intent.action == Intent.ACTION_SCREEN_ON &&
+                ReadPacing.wakeReads(SystemClock.elapsedRealtime(), lastReadAt, lastReadSources, sourcesKey())
+            ) {
                 readAll()
                 bringUpToDate()
             }
@@ -148,8 +151,17 @@ class LockscreenPanel(private val service: AccessibilityService) :
         store.clear()
     }
 
+    /** The apps shown and whether each is switched on, to tell when the choice has changed. */
+    private fun sourcesKey(): List<String> =
+        Glance.order(service).map { if (Glance.switchedOn(service, it)) "+$it" else "-$it" }
+
+    private var lastReadAt = 0L
+    private var lastReadSources: List<String>? = null
+
     private fun readAll() {
         val s = scope ?: return
+        lastReadAt = SystemClock.elapsedRealtime()
+        lastReadSources = sourcesKey()
         reading?.cancel()
         reading = s.launch {
             sections.value = withContext(Dispatchers.IO) {
