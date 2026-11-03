@@ -174,7 +174,7 @@ The way the panel is drawn above the lock screen, and when it is taken down, fol
 [MMD](https://github.com/mudita/MMD), Mudita's E Ink component library. Icons are
 [Material Symbols](https://fonts.google.com/icons), Apache License 2.0.
 
-## Licence
+## License
 
 **GNU General Public License, version 3.** See [LICENSE](LICENSE).
 
