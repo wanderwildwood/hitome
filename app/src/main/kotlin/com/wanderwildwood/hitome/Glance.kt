@@ -85,6 +85,57 @@ object Glance {
     val SOURCES = STACKED + COUNTS
 
     /**
+     * Apps beyond [SOURCES] that keep a provider of their own at `<package>.glance`, the same
+     * one every source above keeps: a new app of the shop's takes part without a new Glance.
+     * Found among the apps with a launcher entry (the only ones Glance can see without asking
+     * for every app), and only where the provider belongs to the app whose name it carries.
+     * They are switched off until switched on here ([isOptIn]): nothing new appears on the lock
+     * screen just because an app was installed.
+     */
+    fun discovered(context: Context): List<String> {
+        val now = android.os.SystemClock.elapsedRealtime()
+        found?.let { (at, list) -> if (now - at < DISCOVERY_MS) return list }
+        val pm = context.packageManager
+        val list = try {
+            val launchable = pm.queryIntentActivities(
+                android.content.Intent(android.content.Intent.ACTION_MAIN).addCategory(android.content.Intent.CATEGORY_LAUNCHER), 0,
+            ).map { it.activityInfo.packageName }
+            discovered(launchable, context.packageName) { pkg ->
+                try {
+                    pm.resolveContentProvider("$pkg.glance", 0)?.takeIf { it.exported }?.packageName
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+        found = now to list
+        return list
+    }
+
+    /** Looks again at the next [discovered], as after an app was installed or removed. */
+    fun forgetDiscovered() {
+        found = null
+    }
+
+    @Volatile private var found: Pair<Long, List<String>>? = null
+    private const val DISCOVERY_MS = 5 * 60_000L
+
+    /**
+     * Of [launchable], the apps to add: not Glance itself, not one already known (Music Box K
+     * stands in Music Box's place), and only where [providerOwner] says the `<package>.glance`
+     * provider is that app's own. In name order, so the panel's order does not shuffle.
+     */
+    fun discovered(launchable: Collection<String>, self: String, providerOwner: (String) -> String?): List<String> =
+        launchable.toSortedSet()
+            .filter { it != self && it !in SOURCES && it != MUSIC_K }
+            .filter { providerOwner(it) == it }
+
+    /** Whether [pkg] stays off the panel until switched on here: the [OPT_IN] ones and every discovered app. */
+    fun isOptIn(pkg: String): Boolean = pkg in OPT_IN || (pkg !in SOURCES && pkg != UNREAD)
+
+    /**
      * Sources that stay off the panel until switched on here too, as well as in their own app:
      * the emergency card, the next dose, today's tickets and the bitcoin price. Nothing new
      * appears on the lock screen just because an app was installed.
@@ -158,19 +209,37 @@ object Glance {
      */
     fun order(context: Context): List<String> {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-        val saved = prefs.getString(KEY_ORDER, null)
+        return order(prefs.getString(KEY_ORDER, null), prefs.getString(KEY_KEEP, null), discovered(context))
+    }
+
+    /**
+     * [order] from what is saved: [saved] (the order as left), else the older [keep] choice.
+     * The [discovered] apps have places too, after the stacked sections and before the counts
+     * until they are moved; one that has gone from the phone drops out, and comes back at the
+     * end if it returns.
+     */
+    fun order(saved: String?, keep: String?, discovered: List<String>): List<String> {
+        val all = STACKED + discovered + UNREAD
         val start = if (saved != null) {
-            saved.split(',').filter { it in DEFAULT_ORDER }.distinct()
+            saved.split(',').filter { it in all }.distinct()
         } else {
             // Whoever chose to keep the weather or the counts before there was an order
             // still has them win: they go first.
-            when (prefs.getString(KEY_KEEP, null)) {
-                "WEATHER" -> listOf(SKY) + (DEFAULT_ORDER - SKY)
-                "COUNTS" -> listOf(UNREAD) + (DEFAULT_ORDER - UNREAD)
-                else -> DEFAULT_ORDER
+            when (keep) {
+                "WEATHER" -> listOf(SKY) + (all - SKY)
+                "COUNTS" -> listOf(UNREAD) + (all - UNREAD)
+                else -> all
             }
         }
-        return start + DEFAULT_ORDER.filter { it !in start }
+        val missing = all.filter { it !in start }
+        // A newly found app goes before the counts, as a new part of an older order would.
+        val at = start.indexOf(UNREAD)
+        val (newApps, rest) = missing.partition { it in discovered }
+        return if (at >= 0 && saved != null) {
+            start.subList(0, at) + newApps + start.subList(at, start.size) + rest
+        } else {
+            start + missing
+        }
     }
 
     private const val KEY_TEXT_SIZE = "text_size"
@@ -208,7 +277,7 @@ object Glance {
         val calendarInstalled = calendarInstalled(context)
         return sources(order(context)).mapNotNull { pkg ->
             when {
-                pkg in OPT_IN && !switchedOn(context, pkg) -> null
+                isOptIn(pkg) && !switchedOn(context, pkg) -> null
                 pkg in PLAYERS && ownControlsOn(context, pkg) -> null
                 pkg == CALENDAR && !calendarInstalled -> Today.read(context)?.copy(key = CALENDAR)
                 else -> read(context, pkg)
@@ -217,7 +286,8 @@ object Glance {
     }
 
     /**
-     * Whether a place in [order] is shown in Settings: only apps that are on this phone. Calendar's
+     * Whether a place in [order] is shown in Settings: only apps that are on this phone (a
+     * discovered app is listed in [installed] like the known ones). Calendar's
      * place stays, since Today's events stands in for it; the counts stay while Messaging or
      * Email is installed, or notification access is on.
      */

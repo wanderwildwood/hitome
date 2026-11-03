@@ -83,8 +83,14 @@ private fun MainScreen() {
         onPauseOrDispose { }
     }
     val serviceOn = remember(checks) { serviceEnabled(context) }
+    // The shop's apps Glance knows by name, and any other that keeps the same provider.
+    val discovered = remember(checks) {
+        Glance.forgetDiscovered()
+        Glance.discovered(context)
+    }
     val installed = remember(checks) {
-        Glance.SOURCES.associateWith { Glance.installed(context.packageManager, it) }
+        Glance.SOURCES.associateWith { Glance.installed(context.packageManager, it) } +
+            discovered.associateWith { true }
     }
     val access = remember(checks) { Notices.accessGranted(context) }
     // Asked for and still off on the way back: on Android 13+ that is restricted settings.
@@ -100,7 +106,9 @@ private fun MainScreen() {
     val hasTorch = remember { Torch.available(context) }
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
-    var switchedOn by remember { mutableStateOf(Glance.OPT_IN.filter { Glance.switchedOn(context, it) }.toSet()) }
+    var switchedOn by remember(discovered) {
+        mutableStateOf((Glance.OPT_IN + discovered).filter { Glance.switchedOn(context, it) }.toSet())
+    }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -117,19 +125,20 @@ private fun MainScreen() {
         }
     }
 
-    var order by remember { mutableStateOf(Glance.order(context)) }
+    var order by remember(discovered) { mutableStateOf(Glance.order(context)) }
     var ordering by remember { mutableStateOf(false) }
 
     // A newer source without its app is not listed, and is stepped over when moving.
     fun listed(key: String) = Glance.listed(key, installed, access)
 
     @Composable
-    fun SourceRow(pkg: String, label: Int) {
+    fun SourceRow(pkg: String, label: String) {
         val here = installed[pkg] == true
-        // The newer sources: not listed without their app, and off until switched on here.
-        if (pkg in Glance.OPT_IN) {
+        // The newer sources, and any app found keeping the provider: not listed without their
+        // app, and off until switched on here.
+        if (Glance.isOptIn(pkg)) {
             val on = pkg in switchedOn
-            SwitchRow(title = stringResource(label), note = null, checked = on) {
+            SwitchRow(title = label, note = null, checked = on) {
                 Glance.setSwitchedOn(context, pkg, !on)
                 switchedOn = if (on) switchedOn - pkg else switchedOn + pkg
             }
@@ -164,7 +173,7 @@ private fun MainScreen() {
         // Not installed, these are named once together, below the list.
         if (!here) return
         // Switched on or off in the app itself, so the row is a door to it.
-        Row(title = stringResource(label), value = null, chevron = true) {
+        Row(title = label, value = null, chevron = true) {
             context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
         }
     }
@@ -246,12 +255,12 @@ private fun MainScreen() {
                 item(key = key) {
                     if (i == 0) Heading(stringResource(R.string.sources_heading))
                     if (key == Glance.UNREAD) {
-                        UNREAD_SOURCES.forEach { (pkg, label) -> SourceRow(pkg, label) }
+                        UNREAD_SOURCES.forEach { (pkg, label) -> SourceRow(pkg, stringResource(label)) }
                         if (UNREAD_SOURCES.none { installed[it.first] == true }) {
                             Row(title = stringResource(R.string.unread_others), value = stringResource(R.string.unread_others_note)) {}
                         }
                     } else {
-                        SourceRow(key, SOURCES.getValue(key))
+                        SourceRow(key, sourceLabel(key))
                     }
                 }
             }
@@ -411,7 +420,7 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         TextMMD(
-                            text = stringResource(if (key == Glance.UNREAD) R.string.unread_title else SOURCES.getValue(key)),
+                            text = sourceLabel(key),
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                         )
@@ -584,6 +593,23 @@ private val SOURCES = mapOf(
     "com.wanderwildwood.mimidoku" to R.string.source_audio_reading,
     "com.wanderwildwood.zeni" to R.string.source_bitcoin,
 )
+
+/**
+ * The name of a place in the order: the shop's own word for a known app, and for an app found
+ * keeping the provider ([Glance.discovered]), its own name on the phone.
+ */
+@Composable
+private fun sourceLabel(key: String): String {
+    if (key == Glance.UNREAD) return stringResource(R.string.unread_title)
+    SOURCES[key]?.let { return stringResource(it) }
+    val context = LocalContext.current
+    return remember(key) {
+        runCatching {
+            val pm = context.packageManager
+            pm.getApplicationLabel(pm.getApplicationInfo(key, 0)).toString()
+        }.getOrDefault(key)
+    }
+}
 
 /** The counts, which keep one place in the order between them. */
 private val UNREAD_SOURCES = listOf(

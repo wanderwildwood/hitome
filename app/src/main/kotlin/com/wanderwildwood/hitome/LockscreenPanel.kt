@@ -120,7 +120,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
         })
-        ((Glance.STACKED + Glance.COUNTS).map { Glance.uri(it) } + Today.watched(service)).forEach { uri ->
+        ((Glance.STACKED + Glance.COUNTS + Glance.discovered(service)).map { Glance.uri(it) } + Today.watched(service)).forEach { uri ->
             try {
                 service.contentResolver.registerContentObserver(uri, true, changes)
             } catch (_: Exception) {}

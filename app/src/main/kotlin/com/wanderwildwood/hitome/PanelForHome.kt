@@ -25,7 +25,7 @@ import java.util.concurrent.TimeUnit
  * sources, in the order chosen here, with the same switches here - and, for each source, why it
  * shows or does not. Other apps' notifications are never part of it.
  *
- * Columns, one row per line: `pkg` (the source, from [Glance.SOURCES]), `heading` (on a
+ * Columns, one row per line: `pkg` (the source, from [Glance.SOURCES] or [Glance.discovered]), `heading` (on a
  * source's first row, optional), `lead` (optional), `text`, `bold` (1 or 0), and `status`. A
  * source with no lines has one row of its own, with no text, to carry its status:
  *
@@ -163,7 +163,7 @@ class PanelForHome : ContentProvider() {
             false
         }
         if (!installed) return Answer(NOT_INSTALLED)
-        if (pkg in Glance.OPT_IN && !Glance.switchedOn(context, pkg)) return Answer(OFF_GLANCE)
+        if (Glance.isOptIn(pkg) && !Glance.switchedOn(context, pkg)) return Answer(OFF_GLANCE)
         if (pm.resolveContentProvider("$pkg.glance", 0) == null) return Answer(NEEDS_UPDATE)
         val uri = Glance.uri(pkg)
         // Unstable, so a source that dies while it is being read costs this ask, not Glance.

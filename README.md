@@ -154,8 +154,10 @@ release APK builds **unsigned** and will not install anywhere; there is no fallb
 
 Any app can take part: a read-only provider at `<package>.glance/lines` with the columns
 `heading`, `lead`, `text` and `bold`, answering only `com.wanderwildwood.hitome`. The file the
-apps share is `glance/GlanceProvider.kt` in any of them. Glance reads a fixed list of apps
-today; ask, and another can be added.
+apps share is `glance/GlanceProvider.kt` in any of them. Glance finds such an app by itself,
+among the apps with a launcher icon, when the provider is the app's own. An app it finds this
+way is listed in Glance under its own name and stays off the lock screen until it is switched on
+there.
 
 ## On the home screen
 
