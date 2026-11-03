@@ -6,6 +6,7 @@ import android.content.pm.PackageInstaller
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +39,7 @@ object RestrictedSettings {
     fun blocked(context: Context, since: Int = 33): Boolean =
         Build.VERSION.SDK_INT >= since && Build.VERSION.SDK_INT >= 33 && fromFile(context)
 
+    @RequiresApi(Build.VERSION_CODES.TIRAMISU)
     private fun fromFile(context: Context): Boolean = runCatching {
         val source = context.packageManager.getInstallSourceInfo(context.packageName).packageSource
         source == PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE || source == PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE
