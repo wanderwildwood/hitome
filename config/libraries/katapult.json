@@ -1,0 +1,8 @@
+{
+  "uniqueId": "katapult",
+  "name": "Katapult",
+  "description": "The lock-screen overlay follows Katapult's way of drawing over the lock screen.",
+  "developers": [{ "name": "gezimos" }],
+  "website": "https://github.com/gezimos/Katapult",
+  "licenses": ["GPL-3.0-only"]
+}
