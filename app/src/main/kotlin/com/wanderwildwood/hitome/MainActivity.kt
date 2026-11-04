@@ -53,6 +53,7 @@ import com.wanderwildwood.hitome.ui.AboutDialog
 import com.wanderwildwood.hitome.ui.BarButton
 import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.Icons
+import com.wanderwildwood.hitome.ui.houseTypography
 import com.wanderwildwood.hitome.ui.monochrome
 import com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP
 import kotlinx.coroutines.Dispatchers
@@ -61,7 +62,7 @@ import kotlinx.coroutines.withContext
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ThemeMMD(colorScheme = monochrome) { MainScreen() } }
+        setContent { ThemeMMD(colorScheme = monochrome, typography = houseTypography) { MainScreen() } }
     }
 }
 
