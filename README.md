@@ -49,7 +49,9 @@ change it:
   it has waiting - "Signal 2 · Clock 1" - on up to two lines. What they say stays off the lock
   screen unless you turn on **Show what they say**; then each app gets a line with its newest
   notification, "Signal 2  Mom: see you at five", except where Android itself would hide it.
-  Messaging and Mailbox then get a line of their words too, under their counts.
+  Messaging and Mailbox then get a line of their words too, under their counts. While
+  Messaging is the phone's texting app, the phone's own texting app (Mudita's SMS, Google
+  Messages) is not counted here even if chosen: its texts are already on Messaging's line.
 
 Pressing a section, or an app's name, unlocks the phone and opens that app.
 

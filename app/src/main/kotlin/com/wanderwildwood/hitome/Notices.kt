@@ -4,6 +4,7 @@ import android.app.Notification
 import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
+import android.provider.Telephony
 import android.service.notification.NotificationListenerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -65,6 +66,28 @@ object Notices {
         return enabled.split(':').any { ComponentName.unflattenFromString(it) == mine }
     }
 
+    /**
+     * Texting apps whose notifications only repeat Messaging's line while Messaging is the
+     * phone's texting app: the phone's own (Mudita's "SMS", AOSP Messaging, Google Messages).
+     * A text that came while one of them was the texting app keeps its notification there after
+     * Messaging takes over, and Messaging counts the same text, so the panel showed it twice.
+     */
+    val OTHER_TEXTING = setOf(
+        "com.mudita.messages",
+        "com.android.messaging",
+        "com.google.android.apps.messaging",
+    )
+
+    /**
+     * Whether [pkg]'s notifications are left off the panel because Messaging already counts the
+     * same texts: Messaging is [defaultSms], the phone's texting app, and [pkg] is another one.
+     * When another app is the texting app, its notifications count as chosen.
+     */
+    fun repeatsMessaging(pkg: String, defaultSms: String?): Boolean =
+        defaultSms == MESSAGING && pkg in OTHER_TEXTING
+
+    private const val MESSAGING = "com.wanderwildwood.kotozute"
+
     internal fun publish(list: List<Notice>) {
         _now.value = list
     }
@@ -110,6 +133,7 @@ class NoticeListener : NotificationListenerService() {
         val active = try { activeNotifications?.toList() } catch (_: Exception) { null } ?: emptyList()
         val ranking = try { currentRanking } catch (_: Exception) { null }
         val rank = Ranking()
+        val defaultSms = try { Telephony.Sms.getDefaultSmsPackage(this) } catch (_: Exception) { null }
         // Newest first, so the app that just spoke leads the line.
         val latest = mutableMapOf<String, Long>()
         val newest = mutableMapOf<String, android.service.notification.StatusBarNotification>()
@@ -120,6 +144,7 @@ class NoticeListener : NotificationListenerService() {
             val pkg = sbn.packageName
             val isOwn = showText && pkg in Glance.COUNTS
             if (!isOwn && (pkg !in chosen || pkg in Glance.SOURCES)) return@forEach
+            if (Notices.repeatsMessaging(pkg, defaultSms)) return@forEach
             val n = sbn.notification
             if (sbn.isOngoing) return@forEach
             if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return@forEach
