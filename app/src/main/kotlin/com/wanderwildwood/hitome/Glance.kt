@@ -161,6 +161,64 @@ object Glance {
         PanelForHome.changed(context)
     }
 
+    private const val KEY_OFF = "off"
+
+    /**
+     * Whether [packageName], one of [COUNTS], has been switched off in Glance. The counts are on
+     * until switched off here, as they were before they had a switch of their own.
+     */
+    fun switchedOff(context: Context, packageName: String): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY_OFF, emptySet())!!.contains(packageName)
+
+    /**
+     * Whether Glance's own switch lets [pkg]'s lines through: the [isOptIn] ones only once
+     * switched on ([on]), the [COUNTS] until switched off ([off]), every other always. The
+     * app's own switch is asked separately, by its answering with nothing.
+     */
+    fun shownHere(pkg: String, on: Set<String>, off: Set<String>): Boolean = when {
+        isOptIn(pkg) -> pkg in on
+        pkg in COUNTS -> pkg !in off
+        else -> true
+    }
+
+    fun shownHere(context: Context, pkg: String): Boolean {
+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+        return shownHere(pkg, prefs.getStringSet(KEY_ON, emptySet())!!, prefs.getStringSet(KEY_OFF, emptySet())!!)
+    }
+
+    /** Switches [pkg] on or off in Glance, whichever kind of switch it has. */
+    fun setShownHere(context: Context, pkg: String, shown: Boolean) {
+        if (pkg in COUNTS) {
+            val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+            val now = prefs.getStringSet(KEY_OFF, emptySet())!!.toMutableSet()
+            if (shown) now -= pkg else now += pkg
+            prefs.edit().putStringSet(KEY_OFF, now).apply()
+            PanelForHome.changed(context)
+            NoticeListener.instance?.recount()
+        } else {
+            setSwitchedOn(context, pkg, shown)
+        }
+    }
+
+    /**
+     * The intent each count's app answers by opening its settings at its own lock-screen
+     * switch, rather than at its main screen. Only Messaging and Mailbox have one.
+     */
+    val OWN_SWITCH_ACTIONS = mapOf(
+        "com.wanderwildwood.kotozute" to "com.wanderwildwood.kotozute.action.LOCK_SCREEN_SETTING",
+        "com.wanderwildwood.tayori" to "com.wanderwildwood.tayori.action.LOCK_SCREEN_SETTING",
+    )
+
+    /**
+     * Where to go for [pkg]'s own lock-screen switch: straight to it where the app has the
+     * entry ([OWN_SWITCH_ACTIONS]); for an older version without one, its main screen.
+     */
+    fun ownSwitchIntent(pm: android.content.pm.PackageManager, pkg: String): android.content.Intent? {
+        val direct = OWN_SWITCH_ACTIONS[pkg]?.let { android.content.Intent(it).setPackage(pkg) }
+        if (direct != null && direct.resolveActivity(pm) != null) return direct
+        return pm.getLaunchIntentForPackage(pkg)
+    }
+
     /** The apps that say what is playing, each of which can draw its own controls on the lock screen. */
     val PLAYERS = setOf("com.wanderwildwood.jimeikin", "com.wanderwildwood.mimidoku")
 
@@ -277,7 +335,7 @@ object Glance {
         val calendarInstalled = calendarInstalled(context)
         return sources(order(context)).mapNotNull { pkg ->
             when {
-                isOptIn(pkg) && !switchedOn(context, pkg) -> null
+                !shownHere(context, pkg) -> null
                 pkg in PLAYERS && ownControlsOn(context, pkg) -> null
                 pkg == CALENDAR && !calendarInstalled -> Today.read(context)?.copy(key = CALENDAR)
                 else -> read(context, pkg)

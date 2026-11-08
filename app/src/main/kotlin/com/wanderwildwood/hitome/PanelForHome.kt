@@ -33,7 +33,8 @@ import java.util.concurrent.TimeUnit
  *   are Calendar's, and may be on with nothing left today.
  * - [OFF_APP]: the app answered with nothing - its own lock-screen switch is off, or it has
  *   nothing to say just now. The apps answer both the same way.
- * - [OFF_GLANCE]: one that stays off until switched on in Glance too, and is not.
+ * - [OFF_GLANCE]: switched off in Glance: one that stays off until switched on there too and
+ *   is not, or one of the counts switched off there.
  * - [NOT_INSTALLED].
  * - [NEEDS_UPDATE]: installed, but too old to hand Glance its lines (no provider, or one that
  *   answers without a `text` column).
@@ -163,7 +164,7 @@ class PanelForHome : ContentProvider() {
             false
         }
         if (!installed) return Answer(NOT_INSTALLED)
-        if (Glance.isOptIn(pkg) && !Glance.switchedOn(context, pkg)) return Answer(OFF_GLANCE)
+        if (!Glance.shownHere(context, pkg)) return Answer(OFF_GLANCE)
         if (pm.resolveContentProvider("$pkg.glance", 0) == null) return Answer(NEEDS_UPDATE)
         val uri = Glance.uri(pkg)
         // Unstable, so a source that dies while it is being read costs this ask, not Glance.

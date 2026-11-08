@@ -46,7 +46,11 @@
     <string name="order_title">Order</string>
     <string name="order_note">The top ones are shown when there is not room for all</string>
     <string name="order_page_note">When there is not room on the lock screen for all of them, the ones at the top are shown.</string>
-    <string name="own_settings_note">Each app also has its own lock-screen switch in its own settings. A line shows only when both are on.</string>
+    <string name="own_settings_note">Each app also has its own lock-screen switch, in its own settings. Where a row here has a switch too, a line shows only when both are on.</string>
+    <string name="door_messaging">Its own switch in Messaging</string>
+    <string name="door_messaging_switch">Opens at “Unread on the lock screen”</string>
+    <string name="door_email">Its own switch in Mailbox</string>
+    <string name="door_email_switch">Opens at “Unread mail on the lock screen”</string>
     <string name="unread_others">Other apps\' notifications</string>
     <string name="unread_others_note">Counted at the foot of the panel</string>
     <string name="not_installed">Not installed: %1$s</string>

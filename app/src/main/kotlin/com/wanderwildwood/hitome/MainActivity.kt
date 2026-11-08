@@ -67,9 +67,10 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Whether the panel is on, and where its lines come from. Calendar, Sky, Messaging and Email
- * each say in their own settings whether they show, so for them this screen is only a door;
- * other apps are counted from their notifications, which is switched on and chosen here.
+ * Whether the panel is on, and where its lines come from. Calendar and Sky each say in their
+ * own settings whether they show, so for them this screen is only a door. Messaging and Email
+ * have a switch here as well as their own, and a door straight to theirs; other apps are
+ * counted from their notifications, which is switched on and chosen here.
  */
 @Composable
 private fun MainScreen() {
@@ -110,6 +111,8 @@ private fun MainScreen() {
     var switchedOn by remember(discovered) {
         mutableStateOf((Glance.OPT_IN + discovered).filter { Glance.switchedOn(context, it) }.toSet())
     }
+    // Messaging's and Mailbox's lines, on until switched off here.
+    var countsOn by remember { mutableStateOf(Glance.COUNTS.filter { Glance.shownHere(context, it) }.toSet()) }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -173,6 +176,19 @@ private fun MainScreen() {
         }
         // Not installed, these are named once together, below the list.
         if (!here) return
+        // Messaging and Mailbox: a switch here, and under it a door to the app's own switch.
+        if (pkg in Glance.COUNTS) {
+            val on = pkg in countsOn
+            SwitchRow(title = label, note = null, checked = on) {
+                Glance.setShownHere(context, pkg, !on)
+                countsOn = if (on) countsOn - pkg else countsOn + pkg
+            }
+            val door = OWN_SWITCH_DOORS.getValue(pkg)
+            Row(title = stringResource(door.first), value = stringResource(door.second), chevron = true) {
+                Glance.ownSwitchIntent(context.packageManager, pkg)?.let { runCatching { context.startActivity(it) } }
+            }
+            return
+        }
         // Switched on or off in the app itself, so the row is a door to it.
         Row(title = label, value = null, chevron = true) {
             context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
@@ -616,6 +632,12 @@ private fun sourceLabel(key: String): String {
 private val UNREAD_SOURCES = listOf(
     "com.wanderwildwood.kotozute" to R.string.source_messaging,
     "com.wanderwildwood.tayori" to R.string.source_email,
+)
+
+/** The door under each count's switch: where it goes, and the name of the switch it lands on. */
+private val OWN_SWITCH_DOORS = mapOf(
+    "com.wanderwildwood.kotozute" to (R.string.door_messaging to R.string.door_messaging_switch),
+    "com.wanderwildwood.tayori" to (R.string.door_email to R.string.door_email_switch),
 )
 
 /**

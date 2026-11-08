@@ -153,7 +153,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
 
     /** The apps shown and whether each is switched on, to tell when the choice has changed. */
     private fun sourcesKey(): List<String> =
-        Glance.order(service).map { if (Glance.switchedOn(service, it)) "+$it" else "-$it" }
+        Glance.sources(Glance.order(service)).map { if (Glance.shownHere(service, it)) "+$it" else "-$it" }
 
     private var lastReadAt = 0L
     private var lastReadSources: List<String>? = null

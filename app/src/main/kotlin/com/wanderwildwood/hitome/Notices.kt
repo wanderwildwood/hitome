@@ -142,7 +142,8 @@ class NoticeListener : NotificationListenerService() {
         val own = mutableMapOf<String, android.service.notification.StatusBarNotification>()
         active.forEach { sbn ->
             val pkg = sbn.packageName
-            val isOwn = showText && pkg in Glance.COUNTS
+            // Switched off in Glance, Messaging's or Email's words go with its count.
+            val isOwn = showText && pkg in Glance.COUNTS && Glance.shownHere(this, pkg)
             if (!isOwn && (pkg !in chosen || pkg in Glance.SOURCES)) return@forEach
             if (Notices.repeatsMessaging(pkg, defaultSms)) return@forEach
             val n = sbn.notification
