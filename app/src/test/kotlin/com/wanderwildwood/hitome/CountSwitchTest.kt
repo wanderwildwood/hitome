@@ -28,8 +28,9 @@ class CountSwitchTest {
     }
 
     @Test
-    fun otherSourcesHaveNoSwitchHere() {
-        assertTrue(Glance.shownHere(Glance.SKY, on = emptySet(), off = setOf(Glance.SKY)))
+    fun otherSourcesAreOnUntilSwitchedOffHere() {
+        assertTrue(Glance.shownHere(Glance.SKY, on = emptySet(), off = emptySet()))
+        assertFalse(Glance.shownHere(Glance.SKY, on = emptySet(), off = setOf(Glance.SKY)))
     }
 
     @Test

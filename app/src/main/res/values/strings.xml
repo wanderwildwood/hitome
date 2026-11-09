@@ -46,24 +46,25 @@
     <string name="order_title">Order</string>
     <string name="order_note">The top ones are shown when there is not room for all</string>
     <string name="order_page_note">When there is not room on the lock screen for all of them, the ones at the top are shown.</string>
-    <string name="own_settings_note">Each app also has its own lock-screen switch, in its own settings. Where a row here has a switch too, a line shows only when both are on.</string>
     <string name="door_messaging">Its own switch in Messaging</string>
     <string name="door_messaging_switch">Opens at “Unread on the lock screen”</string>
     <string name="door_email">Its own switch in Mailbox</string>
     <string name="door_email_switch">Opens at “Unread mail on the lock screen”</string>
-    <string name="unread_others">Other apps\' notifications</string>
-    <string name="unread_others_note">Counted at the foot of the panel</string>
-    <string name="not_installed">Not installed: %1$s</string>
+    <string name="apps_title">Apps</string>
+    <string name="apps_none">None on</string>
+    <!-- How many apps are on the lock screen: "12 on" -->
+    <string name="apps_on">%1$d on</string>
+    <string name="apps_page_note">Switch on the apps you want on the lock screen. Some also have their own lock-screen switch in their own settings; a line shows only when both are on.</string>
+    <!-- Under an app switched on in the Apps list that is not one of the shop's -->
+    <string name="app_counted">Its notifications are counted</string>
+    <string name="app_needs_access">Needs notification access to be counted</string>
+    <!-- A door under an app switched on in the Apps list: "Settings in Sky" -->
+    <string name="app_settings_in">Settings in %1$s</string>
+    <string name="app_settings_note">Choose what it shows on the lock screen</string>
     <string name="access_title">Notification access</string>
-    <string name="access_on_short">On: other apps\' notifications are counted.</string>
     <string name="move_up">Move up</string>
     <string name="move_down">Move down</string>
-    <string name="others_heading">Other apps\' notifications</string>
     <string name="access_off_note">Turn on notification access for Glance to count other apps\' notifications.</string>
-    <string name="choose_apps">Choose apps</string>
-    <string name="chosen_none">None chosen</string>
-    <!-- How many apps have their notifications counted: "3 chosen" -->
-    <string name="chosen_some">%1$d chosen</string>
     <string name="show_text">Show what they say</string>
     <string name="show_text_note">The newest from each chosen app, and from Messaging and Mailbox, on the lock screen, where anyone holding the phone can read it.</string>
     <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden.</string>

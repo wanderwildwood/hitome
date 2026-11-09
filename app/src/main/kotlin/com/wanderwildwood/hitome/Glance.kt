@@ -164,22 +164,20 @@ object Glance {
     private const val KEY_OFF = "off"
 
     /**
-     * Whether [packageName], one of [COUNTS], has been switched off in Glance. The counts are on
-     * until switched off here, as they were before they had a switch of their own.
+     * Whether [packageName], a source that is not [isOptIn], has been switched off in Glance.
+     * Those are on until switched off here, as they were before they had a switch of their own.
      */
     fun switchedOff(context: Context, packageName: String): Boolean =
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getStringSet(KEY_OFF, emptySet())!!.contains(packageName)
 
     /**
      * Whether Glance's own switch lets [pkg]'s lines through: the [isOptIn] ones only once
-     * switched on ([on]), the [COUNTS] until switched off ([off]), every other always. The
-     * app's own switch is asked separately, by its answering with nothing.
+     * switched on ([on]), every other source until switched off ([off]), as they were before
+     * each had a switch here. The app's own switch is asked separately, by its answering with
+     * nothing.
      */
-    fun shownHere(pkg: String, on: Set<String>, off: Set<String>): Boolean = when {
-        isOptIn(pkg) -> pkg in on
-        pkg in COUNTS -> pkg !in off
-        else -> true
-    }
+    fun shownHere(pkg: String, on: Set<String>, off: Set<String>): Boolean =
+        if (isOptIn(pkg)) pkg in on else pkg !in off
 
     fun shownHere(context: Context, pkg: String): Boolean {
         val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
@@ -188,7 +186,7 @@ object Glance {
 
     /** Switches [pkg] on or off in Glance, whichever kind of switch it has. */
     fun setShownHere(context: Context, pkg: String, shown: Boolean) {
-        if (pkg in COUNTS) {
+        if (!isOptIn(pkg)) {
             val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
             val now = prefs.getStringSet(KEY_OFF, emptySet())!!.toMutableSet()
             if (shown) now -= pkg else now += pkg

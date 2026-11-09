@@ -76,10 +76,9 @@ class MainActivity : ComponentActivity() {
 }
 
 /**
- * Whether the panel is on, and where its lines come from. Calendar and Sky each say in their
- * own settings whether they show, so for them this screen is only a door. Messaging and Email
- * have a switch here as well as their own, and a door straight to theirs; other apps are
- * counted from their notifications, which is switched on and chosen here.
+ * Whether the panel is on, and where its lines come from: one list of the phone's apps
+ * ([AppsScreen]), the shop's and everyone else's together, with whatever belongs to one app
+ * alone under it.
  */
 @Composable
 private fun MainScreen() {
@@ -110,7 +109,8 @@ private fun MainScreen() {
     var askedService by rememberSaveable { mutableStateOf(false) }
     var askedAccess by rememberSaveable { mutableStateOf(false) }
     val restricted = remember(checks) { RestrictedSettings.blocked(context) }
-    val chosenCount = remember(checks, choosing) { Notices.chosen(context).size }
+    val appsOn = remember(checks, choosing) { appsOnCount(context) }
+    val othersChosen = remember(checks, choosing) { Notices.chosen(context).isNotEmpty() }
     var showText by remember { mutableStateOf(Notices.showText(context)) }
     var quietOn by remember(checks) { mutableStateOf(Quiet.on(context)) }
     var torchOn by remember { mutableStateOf(Torch.enabled(context)) }
@@ -132,11 +132,6 @@ private fun MainScreen() {
     val hasTorch = remember { Torch.available(context) }
 
     var todayOn by remember { mutableStateOf(Today.enabled(context)) }
-    var switchedOn by remember(discovered) {
-        mutableStateOf((Glance.OPT_IN + discovered).filter { Glance.switchedOn(context, it) }.toSet())
-    }
-    // Messaging's and Mailbox's lines, on until switched off here.
-    var countsOn by remember { mutableStateOf(Glance.COUNTS.filter { Glance.shownHere(context, it) }.toSet()) }
     val calendarAccess = remember(checks) { Today.canReadCalendars(context) }
     val muditaCalendar = remember(checks) { Today.muditaCalendarInstalled(context) }
     val askCalendar = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -159,69 +154,43 @@ private fun MainScreen() {
     // A newer source without its app is not listed, and is stepped over when moving.
     fun listed(key: String) = Glance.listed(key, installed, access)
 
+    // Without Calendar, Glance reads today's events itself, if asked to.
     @Composable
-    fun SourceRow(pkg: String, label: String) {
-        val here = installed[pkg] == true
-        // The newer sources, and any app found keeping the provider: not listed without their
-        // app, and off until switched on here.
-        if (Glance.isOptIn(pkg)) {
-            val on = pkg in switchedOn
-            SwitchRow(title = label, note = null, checked = on) {
-                Glance.setSwitchedOn(context, pkg, !on)
-                switchedOn = if (on) switchedOn - pkg else switchedOn + pkg
+    fun TodayRow() {
+        SwitchRow(
+            title = stringResource(R.string.today_switch),
+            note = stringResource(
+                when {
+                    muditaCalendar && calendarAccess -> R.string.today_note_all
+                    muditaCalendar && todayOn -> R.string.today_note_mudita
+                    muditaCalendar -> R.string.today_note_mudita_off
+                    calendarAccess -> R.string.today_note_shared
+                    else -> R.string.today_note_none
+                },
+            ),
+            checked = todayOn,
+        ) {
+            // With it on, a press on a row still missing the other calendars asks for them.
+            if (todayOn && !calendarAccess) {
+                askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
+                return@SwitchRow
             }
-            return
-        }
-        // Without Calendar, Glance reads today's events itself, if asked to.
-        if (pkg == Glance.CALENDAR && !here) {
-            SwitchRow(
-                title = stringResource(R.string.today_switch),
-                note = stringResource(
-                    when {
-                        muditaCalendar && calendarAccess -> R.string.today_note_all
-                        muditaCalendar && todayOn -> R.string.today_note_mudita
-                        muditaCalendar -> R.string.today_note_mudita_off
-                        calendarAccess -> R.string.today_note_shared
-                        else -> R.string.today_note_none
-                    },
-                ),
-                checked = todayOn,
-            ) {
-                // With it on, a press on a row still missing the other calendars asks for them.
-                if (todayOn && !calendarAccess) {
-                    askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
-                    return@SwitchRow
-                }
-                todayOn = !todayOn
-                Today.setEnabled(context, todayOn)
-                if (todayOn && !calendarAccess) askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
-            }
-            return
-        }
-        // Not installed, these are named once together, below the list.
-        if (!here) return
-        // Messaging and Mailbox: a switch here, and under it a door to the app's own switch.
-        if (pkg in Glance.COUNTS) {
-            val on = pkg in countsOn
-            SwitchRow(title = label, note = null, checked = on) {
-                Glance.setShownHere(context, pkg, !on)
-                countsOn = if (on) countsOn - pkg else countsOn + pkg
-            }
-            val door = OWN_SWITCH_DOORS.getValue(pkg)
-            Row(title = stringResource(door.first), value = stringResource(door.second), chevron = true) {
-                Glance.ownSwitchIntent(context.packageManager, pkg)?.let { runCatching { context.startActivity(it) } }
-            }
-            return
-        }
-        // Switched on or off in the app itself, so the row is a door to it.
-        Row(title = label, value = null, chevron = true) {
-            context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
+            todayOn = !todayOn
+            Today.setEnabled(context, todayOn)
+            if (todayOn && !calendarAccess) askCalendar.launch(android.Manifest.permission.READ_CALENDAR)
         }
     }
     if (aboutOpen) AboutDialog(onDismiss = { aboutOpen = false })
     if (choosing) {
         BackHandler { choosing = false }
-        ChooseAppsScreen { choosing = false }
+        AppsScreen(
+            access = access,
+            onNeedAccess = {
+                askedAccess = true
+                openNotificationAccess(context)
+            },
+            onBack = { choosing = false },
+        )
         return
     }
     if (previewing) {
@@ -245,11 +214,6 @@ private fun MainScreen() {
         )
         return
     }
-
-    // The older sources whose app is missing: Calendar's place is taken by the Today switch.
-    val missing = (Glance.SOURCES - Glance.OPT_IN - Glance.CALENDAR)
-        .filter { installed[it] != true }
-        .mapNotNull { (SOURCES + UNREAD_SOURCES)[it] }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
@@ -290,64 +254,35 @@ private fun MainScreen() {
                 Row(title = stringResource(R.string.text_size), value = stringResource(TEXT_SIZE_NAMES[textSize])) { pickingSize = true }
             }
 
-            // Each heading is drawn in the item of the row under it, so a page never ends on a
-            // heading alone.
-            order.filter { listed(it) }.forEachIndexed { i, key ->
-                item(key = key) {
-                    if (i == 0) Heading(stringResource(R.string.sources_heading))
-                    if (key == Glance.UNREAD) {
-                        UNREAD_SOURCES.forEach { (pkg, label) -> SourceRow(pkg, stringResource(label)) }
-                        if (UNREAD_SOURCES.none { installed[it.first] == true }) {
-                            Row(title = stringResource(R.string.unread_others), value = stringResource(R.string.unread_others_note)) {}
-                        }
-                    } else {
-                        SourceRow(key, sourceLabel(key))
-                    }
-                }
+            // One list of every app on the phone, the shop's and everyone else's, on its own page.
+            item {
+                Heading(stringResource(R.string.sources_heading))
+                Row(
+                    title = stringResource(R.string.apps_title),
+                    value = if (appsOn == 0) stringResource(R.string.apps_none) else stringResource(R.string.apps_on, appsOn),
+                    chevron = true,
+                ) { choosing = true }
             }
+            if (!installed.getOrDefault(Glance.CALENDAR, false)) item { TodayRow() }
             item {
                 Row(title = stringResource(R.string.order_title), value = stringResource(R.string.order_note), chevron = true) { ordering = true }
             }
-            item {
-                TextMMD(
-                    text = stringResource(R.string.own_settings_note),
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-            if (missing.isNotEmpty()) {
-                item {
-                    val names = missing.map { stringResource(it).substringBefore(':') }
-                    TextMMD(
-                        text = stringResource(R.string.not_installed, names.joinToString(", ")),
-                        style = MaterialTheme.typography.labelSmall,
-                        modifier = Modifier.padding(top = 6.dp),
-                    )
-                }
-            }
-
-            item {
-                Heading(stringResource(R.string.others_heading))
-                Row(
-                    title = stringResource(R.string.access_title),
-                    value = stringResource(if (access) R.string.access_on_short else R.string.access_off_note),
-                    chevron = true,
-                ) {
-                    askedAccess = true
-                    openNotificationAccess(context)
-                }
-            }
-            // With the panel on, restricted settings were already allowed: nothing to say here.
-            if (askedAccess && !access && !serviceOn && restricted) item { RestrictedHint() }
-            if (access) {
+            // Other apps are counted from their notifications, which needs Android's leave.
+            if (othersChosen && !access) {
                 item {
                     Row(
-                        title = stringResource(R.string.choose_apps),
-                        value = if (chosenCount == 0) stringResource(R.string.chosen_none)
-                            else stringResource(R.string.chosen_some).format(chosenCount),
+                        title = stringResource(R.string.access_title),
+                        value = stringResource(R.string.access_off_note),
                         chevron = true,
-                    ) { choosing = true }
+                    ) {
+                        askedAccess = true
+                        openNotificationAccess(context)
+                    }
                 }
+                // With the panel on, restricted settings were already allowed: nothing to say here.
+                if (askedAccess && !serviceOn && restricted) item { RestrictedHint() }
+            }
+            if (access) {
                 item {
                     SwitchRow(
                         title = stringResource(R.string.show_text),
@@ -594,9 +529,10 @@ private fun OrderScreen(keys: List<String>, onMove: (String, Int) -> Unit, onBac
 
 /** A row that opens something: another page, another app, a setting of Android's. */
 @Composable
-private fun Row(title: String, value: String?, chevron: Boolean = false, onClick: () -> Unit) {
+private fun Row(title: String, value: String?, chevron: Boolean = false, indent: Boolean = false, onClick: () -> Unit) {
     androidx.compose.foundation.layout.Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(vertical = 14.dp),
+        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp)
+            .padding(start = if (indent) 16.dp else 0.dp).padding(vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
@@ -662,47 +598,121 @@ private fun PreviewScreen(serviceOn: Boolean, onBack: () -> Unit) {
 private const val PREVIEW_ROOM_DP = 380
 
 /**
- * Every app with a place in the launcher, to choose which have their notifications counted.
- * Calendar, Sky, Messaging and Email are left out: they have their own place on the panel.
- * Glance too, which posts nothing.
+ * Every app on the phone with a place in the launcher, A to Z, the shop's and everyone else's
+ * together. An app that hands Glance its own lines ([Glance.SOURCES], or one found keeping the
+ * provider) is switched by Glance's own switch for it; any other has its notifications
+ * counted. What belongs to one app alone, such as its own lock-screen switch, sits under it
+ * while it is on.
  */
 @Composable
-private fun ChooseAppsScreen(onBack: () -> Unit) {
+private fun AppsScreen(access: Boolean, onNeedAccess: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
-    val apps = remember {
-        val pm = context.packageManager
-        val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-        pm.queryIntentActivities(launcher, 0)
-            .map { it.activityInfo.applicationInfo }
-            .distinctBy { it.packageName }
-            .filter { it.packageName != context.packageName && it.packageName !in Glance.SOURCES }
-            .map { it.packageName to pm.getApplicationLabel(it).toString() }
-            .sortedBy { it.second.lowercase() }
-    }
+    val apps = remember { phoneApps(context) }
+    val providers = remember { Glance.SOURCES.toSet() + Glance.discovered(context) }
     // Two apps may share a name (Android's own Calendar and this one): those say which is which.
     val shared = remember(apps) { apps.groupBy { it.second }.filterValues { it.size > 1 }.keys }
     var chosen by remember { mutableStateOf(Notices.chosen(context)) }
+    var shownHere by remember { mutableStateOf(providers.filter { Glance.shownHere(context, it) }.toSet()) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             TopAppBarMMD(
-                title = { TextMMD(text = stringResource(R.string.choose_apps)) },
+                title = { TextMMD(text = stringResource(R.string.apps_title)) },
                 navigationIcon = { BarButton(Icons.Back, stringResource(R.string.cd_back), onBack) },
             )
         },
     ) { padding ->
         PagedColumn(Modifier.fillMaxSize().padding(padding), contentPadding = androidx.compose.foundation.layout.PaddingValues(start = 20.dp, end = 12.dp), showCutRow = true) {
+            item {
+                TextMMD(
+                    text = stringResource(R.string.apps_page_note),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 6.dp),
+                )
+            }
             apps.forEach { (pkg, label) ->
                 item(key = pkg) {
-                    val on = pkg in chosen
-                    SwitchRow(label, if (label in shared) pkg else null, on) {
-                        Notices.setChosen(context, pkg, !on)
-                        chosen = Notices.chosen(context)
+                    Column {
+                        if (pkg in providers) {
+                            val on = pkg in shownHere
+                            // What it puts on the panel, the part of its name after the colon.
+                            val shows = (SOURCES + UNREAD_SOURCES)[pkg]?.let { stringResource(it).substringAfter(": ") }
+                            SwitchRow(label, shows ?: if (label in shared) pkg else null, on) {
+                                Glance.setShownHere(context, pkg, !on)
+                                shownHere = if (on) shownHere - pkg else shownHere + pkg
+                            }
+                            if (on) AppExtras(pkg, label)
+                        } else {
+                            val on = pkg in chosen
+                            SwitchRow(
+                                label,
+                                when {
+                                    on && !access -> stringResource(R.string.app_needs_access)
+                                    on -> stringResource(R.string.app_counted)
+                                    label in shared -> pkg
+                                    else -> null
+                                },
+                                on,
+                            ) {
+                                Notices.setChosen(context, pkg, !on)
+                                chosen = Notices.chosen(context)
+                                if (!on && !access) onNeedAccess()
+                            }
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * What belongs to [pkg] alone, under its row while it is on: Messaging's and Mailbox's own
+ * lock-screen switch, reached directly; for the apps that choose in their own settings what
+ * they show (Datebook, Sky, Memo, Music Box, Audio Reader), a door to them.
+ */
+@Composable
+private fun AppExtras(pkg: String, label: String) {
+    val context = LocalContext.current
+    val door = OWN_SWITCH_DOORS[pkg]
+    when {
+        door != null -> Row(title = stringResource(door.first), value = stringResource(door.second), chevron = true, indent = true) {
+            Glance.ownSwitchIntent(context.packageManager, pkg)?.let { runCatching { context.startActivity(it) } }
+        }
+        pkg in Glance.STACKED && !Glance.isOptIn(pkg) -> Row(
+            title = stringResource(R.string.app_settings_in, label),
+            value = stringResource(R.string.app_settings_note),
+            chevron = true,
+            indent = true,
+        ) {
+            context.packageManager.getLaunchIntentForPackage(pkg)?.let { runCatching { context.startActivity(it) } }
+        }
+    }
+}
+
+/**
+ * The apps [AppsScreen] lists, as package and name, A to Z: every launcher app but Glance.
+ * Music Box K answers as Music Box, whose place on the panel it shares.
+ */
+private fun phoneApps(context: android.content.Context): List<Pair<String, String>> {
+    val pm = context.packageManager
+    val launcher = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+    return pm.queryIntentActivities(launcher, 0)
+        .map { it.activityInfo.applicationInfo }
+        .distinctBy { it.packageName }
+        .filter { it.packageName != context.packageName }
+        .map { (if (it.packageName == Glance.MUSIC_K) Glance.MUSIC else it.packageName) to pm.getApplicationLabel(it).toString() }
+        .distinctBy { it.first }
+        .sortedBy { it.second.lowercase() }
+}
+
+/** How many of [phoneApps] are on: shown here, or counted from their notifications. */
+private fun appsOnCount(context: android.content.Context): Int {
+    val providers = Glance.SOURCES.toSet() + Glance.discovered(context)
+    val chosen = Notices.chosen(context)
+    return phoneApps(context).count { (pkg, _) ->
+        if (pkg in providers) Glance.shownHere(context, pkg) else pkg in chosen
     }
 }
 
