@@ -56,6 +56,15 @@ import com.wanderwildwood.hitome.ui.Icons
 import com.wanderwildwood.hitome.ui.houseTypography
 import com.wanderwildwood.hitome.ui.monochrome
 import com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP
+import com.wanderwildwood.hitome.ui.DialogButtons
+import com.wanderwildwood.hitome.ui.TimeDialog
+import java.time.DayOfWeek
+import java.time.LocalTime
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
+import java.time.temporal.WeekFields
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
@@ -82,6 +91,8 @@ private fun MainScreen() {
     var checks by remember { mutableIntStateOf(0) }
     LifecycleResumeEffect(Unit) {
         checks++
+        // Opened inside quiet hours, or back from granting notification access: put it right.
+        QuietHours.sync(context)
         onPauseOrDispose { }
     }
     val serviceOn = remember(checks) { serviceEnabled(context) }
@@ -103,6 +114,19 @@ private fun MainScreen() {
     var showText by remember { mutableStateOf(Notices.showText(context)) }
     var quietOn by remember(checks) { mutableStateOf(Quiet.on(context)) }
     var torchOn by remember { mutableStateOf(Torch.enabled(context)) }
+    var quietHoursOn by remember { mutableStateOf(QuietHours.enabled(context)) }
+    var quietStart by remember { mutableStateOf(QuietHours.start(context)) }
+    var quietEnd by remember { mutableStateOf(QuietHours.end(context)) }
+    var quietDays by remember { mutableStateOf(QuietHours.days(context)) }
+    var repeatCallers by remember { mutableStateOf(QuietHours.repeatCallers(context)) }
+    var settingTime by remember { mutableStateOf<Boolean?>(null) } // true: the start, false: the end
+    var pickingDays by remember { mutableStateOf(false) }
+    // Whether the night has begun, and when it ends: read afresh on return and on each change.
+    val quietUntil = remember(checks, quietHoursOn, quietStart, quietEnd, quietDays) {
+        val schedule = QuietHours.schedule(context)
+        val now = ZonedDateTime.now()
+        if (quietHoursOn && schedule.inside(now)) schedule.nextChange(now) else null
+    }
     var textSize by remember { mutableIntStateOf(Glance.textSize(context)) }
     var pickingSize by remember { mutableStateOf(false) }
     val hasTorch = remember { Torch.available(context) }
@@ -358,6 +382,51 @@ private fun MainScreen() {
                     if (Quiet.set(context, !quietOn)) quietOn = !quietOn
                 }
             }
+            item {
+                SwitchRow(
+                    title = stringResource(R.string.quiet_hours),
+                    note = when {
+                        !access -> stringResource(R.string.quiet_needs_access)
+                        quietUntil != null -> stringResource(R.string.quiet_hours_now, clockTime(quietUntil.toLocalTime()))
+                        else -> stringResource(R.string.quiet_hours_note)
+                    },
+                    checked = quietHoursOn,
+                ) {
+                    if (!Quiet.allowed(context)) {
+                        askedAccess = true
+                        openNotificationAccess(context)
+                        return@SwitchRow
+                    }
+                    quietHoursOn = !quietHoursOn
+                    QuietHours.setEnabled(context, quietHoursOn)
+                }
+            }
+            // How it is set, only while it is on.
+            if (quietHoursOn) {
+                item {
+                    Row(title = stringResource(R.string.quiet_hours_start), value = clockTime(quietStart)) { settingTime = true }
+                }
+                item {
+                    Row(
+                        title = stringResource(R.string.quiet_hours_end),
+                        value = if (quietEnd.isAfter(quietStart)) clockTime(quietEnd)
+                            else stringResource(R.string.quiet_hours_next_day, clockTime(quietEnd)),
+                    ) { settingTime = false }
+                }
+                item {
+                    Row(title = stringResource(R.string.quiet_hours_days), value = daysLabel(quietDays)) { pickingDays = true }
+                }
+                item {
+                    SwitchRow(
+                        title = stringResource(R.string.quiet_hours_repeat),
+                        note = stringResource(R.string.quiet_hours_repeat_note),
+                        checked = repeatCallers,
+                    ) {
+                        repeatCallers = !repeatCallers
+                        QuietHours.setRepeatCallers(context, repeatCallers)
+                    }
+                }
+            }
             // Only on a phone with a torch to switch.
             if (hasTorch) {
                 item {
@@ -371,6 +440,50 @@ private fun MainScreen() {
                     }
                 }
             }
+        }
+    }
+    settingTime?.let { starting ->
+        TimeDialog(
+            title = stringResource(if (starting) R.string.quiet_hours_start else R.string.quiet_hours_end),
+            initial = if (starting) quietStart else quietEnd,
+            onPick = { time ->
+                if (starting) {
+                    quietStart = time
+                    QuietHours.setStart(context, time)
+                } else {
+                    quietEnd = time
+                    QuietHours.setEnd(context, time)
+                }
+            },
+            onDismiss = { settingTime = null },
+        )
+    }
+    if (pickingDays) {
+        EInkDialog(onDismiss = { pickingDays = false }) {
+            TextMMD(text = stringResource(R.string.quiet_hours_days), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+            TextMMD(
+                text = stringResource(R.string.quiet_hours_days_note),
+                style = MaterialTheme.typography.labelSmall,
+                modifier = Modifier.padding(top = 2.dp, bottom = 4.dp),
+            )
+            weekInOrder().forEach { day ->
+                val on = day in quietDays
+                SwitchRow(title = day.getDisplayName(TextStyle.FULL, Locale.getDefault()), note = null, checked = on) {
+                    // At least one day stays chosen; switching quiet hours off is the switch above.
+                    val next = if (on) quietDays - day else quietDays + day
+                    if (next.isNotEmpty()) {
+                        quietDays = next
+                        QuietHours.setDays(context, next)
+                    }
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+            DialogButtons(
+                cancel = "",
+                confirm = stringResource(R.string.done),
+                onCancel = null,
+                onConfirm = { pickingDays = false },
+            )
         }
     }
     if (pickingSize) {
@@ -394,6 +507,30 @@ private fun MainScreen() {
         }
     }
 }
+
+/** A time of day on the phone's own clock, 12- or 24-hour as it is set. */
+@Composable
+private fun clockTime(time: LocalTime): String {
+    val context = LocalContext.current
+    val locale = Locale.getDefault()
+    val pattern = android.text.format.DateFormat.getBestDateTimePattern(
+        locale,
+        if (android.text.format.DateFormat.is24HourFormat(context)) "Hmm" else "hmma",
+    )
+    return DateTimeFormatter.ofPattern(pattern, locale).format(time)
+}
+
+/** The week as the phone's language starts it: Sunday first in the US, Monday in much of Europe. */
+private fun weekInOrder(): List<DayOfWeek> {
+    val first = WeekFields.of(Locale.getDefault()).firstDayOfWeek
+    return (0L until 7L).map { first.plus(it) }
+}
+
+/** "Every day", or the chosen days in the week's order: "Mon, Tue, Fri". */
+@Composable
+private fun daysLabel(days: Set<DayOfWeek>): String =
+    if (days.size == 7) stringResource(R.string.quiet_hours_every_day)
+    else weekInOrder().filter { it in days }.joinToString(", ") { it.getDisplayName(TextStyle.SHORT, Locale.getDefault()) }
 
 /** The names of [Glance.TEXT_SCALES], in the same order. */
 private val TEXT_SIZE_NAMES = listOf(R.string.text_size_normal, R.string.text_size_large, R.string.text_size_larger)

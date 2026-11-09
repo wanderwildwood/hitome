@@ -91,6 +91,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
                 readAll()
                 bringUpToDate()
             }
+            // An alarm held back while the phone slept still leaves quiet hours on time to the eye.
+            if (intent.action == Intent.ACTION_SCREEN_ON && QuietHours.enabled(context)) QuietHours.sync(context)
             // A new look at the lock screen: whether its items can be read is learned afresh.
             if (intent.action == Intent.ACTION_SCREEN_OFF) sawLockScreen = false
             evaluate()

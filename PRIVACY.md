@@ -41,6 +41,12 @@ today's events itself, if you turn that on. It has no network access and sends n
   Disturb rule of its own (calls from anyone and alarms ring, nothing is hidden) and removes it
   when you turn it off. It reads nothing through it. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Quiet.kt`.
+- **Do Not Disturb on a schedule, only if you turn on Quiet hours.** Glance adds a second Do
+  Not Disturb rule of its own (alarms ring, media plays when you play it, and a second call from
+  the same number within 15 minutes if you leave that on; nothing is hidden), turns it on and off
+  at the times you set with an alarm, and removes it when you turn Quiet hours off. It keeps the
+  times and days you set, and nothing about calls. The code is
+  `app/src/main/kotlin/com/wanderwildwood/hitome/QuietHours.kt`.
 - **The torch, only if you turn on Power pressed twice.** Glance notes when the screen goes on
   and off, keeps nothing of it, and switches the torch. It does not open the camera. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Torch.kt`.
@@ -65,8 +71,8 @@ The code is `app/src/main/kotlin/com/wanderwildwood/hitome/PanelForHome.kt`.
 
 ## What it stores
 
-The list of apps you chose, whether to show what they say, and whether to read today's events,
-and nothing else: no history and no copy of what it shows.
+The list of apps you chose, whether to show what they say, whether to read today's events, and
+the times and days of Quiet hours, and nothing else: no history and no copy of what it shows.
 
 ## Checking for yourself
 
@@ -74,8 +80,13 @@ and nothing else: no history and no copy of what it shows.
 aapt2 dump badging hitome.apk | grep uses-permission
 ```
 
-prints two lines. `android.permission.READ_CALENDAR` is calendar access, asked for only when you
+prints five lines. `android.permission.READ_CALENDAR` is calendar access, asked for only when you
 turn on **Today's events** on a phone without Datebook, and never otherwise.
+`android.permission.ACCESS_NOTIFICATION_POLICY` lets Glance set its own Do Not Disturb rules
+(Ring for calls only, Quiet hours) once notification access is on.
+`android.permission.SCHEDULE_EXACT_ALARM` and `android.permission.RECEIVE_BOOT_COMPLETED` let
+Quiet hours begin and end on time while the phone sleeps, and again after a restart; with Quiet
+hours off, Glance sets no alarm and does nothing when the phone starts.
 `com.wanderwildwood.hitome.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` is not a permission over
 anything on the phone: AndroidX declares it inside every app built against it, so that the app's
 own internal broadcasts cannot be sent by anyone else, and it names Glance itself. Notification

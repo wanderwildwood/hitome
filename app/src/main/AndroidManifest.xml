@@ -13,10 +13,15 @@
       Calendar, to read the phone's shared calendars; Mudita's own Calendar needs none.
 
       Ring for calls only sets a Do Not Disturb rule of Glance's own, which notification access
-      allows; it is never set unless the owner turns it on.
+      allows; it is never set unless the owner turns it on. Quiet hours is a second such rule,
+      turned on and off at its start and end by an alarm: exact alarms so it is on time while the
+      phone sleeps (Android 12 allows them unless switched off), and the phone starting so the
+      alarm is set again after a restart. Neither does anything while quiet hours are off.
     -->
     <uses-permission android:name="android.permission.READ_CALENDAR" />
     <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
 
     <queries>
         <intent>
@@ -102,6 +107,19 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <!-- Quiet hours: its own alarm at each start and end, and the phone starting, updating
+             Glance, or changing its clock or time zone. Only the system and Glance reach it. -->
+        <receiver
+            android:name=".QuietHoursReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <action android:name="android.intent.action.TIME_SET" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+        </receiver>
 
         <!-- The panel's lines for inkOS:wndr's home screen. Exported with no permission because
              it checks the caller's package and signing certificate itself; see PanelForHome.kt. -->

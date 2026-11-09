@@ -101,6 +101,16 @@ Disturb rule of Glance's own, listed with the phone's other Do Not Disturb rules
 the phone's own Do Not Disturb settings alone. It needs notification access. Turning on the
 phone's own Do Not Disturb and off again also turns this off; press it again to bring it back.
 
+**Quiet hours**, under **Sound**, is Do Not Disturb on a schedule, for sleeping: from the start
+to the end on the days you choose, alarms ring, media plays when you play it, and every other call
+and notification comes in silent (notifications still show). With **Let repeat callers ring** on,
+which it is unless you turn it off, a second call from the same number within 15 minutes rings,
+as Android's own Do Not Disturb defines a repeat caller. An end at or before the start is the next
+morning, and a night belongs to the day it starts. It is a second Do Not Disturb rule of Glance's
+own, turned on and off by an alarm at each start and end. Turning the phone's own Do Not Disturb
+off during quiet hours ends that night's; the next night's comes as usual. It needs notification
+access.
+
 **Power pressed twice**, under **Torch**, turns the torch on or off with two quick presses of the
 power key, locked or not. The Kompakt has Android's own double press switched off, and no app can
 hear the power key, so Glance watches the screen go on and off instead: two changes within about

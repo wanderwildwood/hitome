@@ -23,6 +23,8 @@ class GlanceService : AccessibilityService() {
         torch?.stop()
         panel = LockscreenPanel(this).also { it.start() }
         torch = Torch(this).also { it.start() }
+        // Started inside quiet hours (after an update, say): on at once, not at the next alarm.
+        if (QuietHours.enabled(this)) QuietHours.sync(this)
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
