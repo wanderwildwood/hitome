@@ -692,7 +692,8 @@ private fun AppExtras(pkg: String, label: String) {
 }
 
 /**
- * The apps [AppsScreen] lists, as package and name, A to Z: every launcher app but Glance.
+ * The apps [AppsScreen] lists, as package and name, A to Z: every launcher app but Glance and
+ * the phone's own plumbing ([Glance.isPlumbing]).
  * Music Box K answers as Music Box, whose place on the panel it shares.
  */
 private fun phoneApps(context: android.content.Context): List<Pair<String, String>> {
@@ -702,6 +703,7 @@ private fun phoneApps(context: android.content.Context): List<Pair<String, Strin
         .map { it.activityInfo.applicationInfo }
         .distinctBy { it.packageName }
         .filter { it.packageName != context.packageName }
+        .filter { !Glance.isPlumbing(it.packageName, it.flags and android.content.pm.ApplicationInfo.FLAG_SYSTEM != 0) }
         .map { (if (it.packageName == Glance.MUSIC_K) Glance.MUSIC else it.packageName) to pm.getApplicationLabel(it).toString() }
         .distinctBy { it.first }
         .sortedBy { it.second.lowercase() }

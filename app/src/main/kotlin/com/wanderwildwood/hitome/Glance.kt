@@ -217,6 +217,24 @@ object Glance {
         return pm.getLaunchIntentForPackage(pkg)
     }
 
+    /**
+     * Parts of the phone itself that happen to have a launcher entry: the web engine, the SIM
+     * toolkit, the location helper, search, Android's Settings and Mudita's updater. Nobody
+     * wants them on the lock screen, so the Apps list leaves them out. Only when they came
+     * with the phone ([system]): an app someone installed is always listed.
+     */
+    fun isPlumbing(pkg: String, system: Boolean): Boolean =
+        system && (pkg in SYSTEM_PLUMBING || pkg.startsWith("com.mediatek."))
+
+    private val SYSTEM_PLUMBING = setOf(
+        "com.android.webview",
+        "com.google.android.webview",
+        "com.android.stk",
+        "com.android.quicksearchbox",
+        "com.android.settings",
+        "com.mudita.system.updater",
+    )
+
     /** The apps that say what is playing, each of which can draw its own controls on the lock screen. */
     val PLAYERS = setOf("com.wanderwildwood.jimeikin", "com.wanderwildwood.mimidoku")
 
