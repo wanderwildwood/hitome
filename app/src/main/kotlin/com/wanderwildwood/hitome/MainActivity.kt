@@ -44,6 +44,7 @@ import com.mudita.mmd.components.switcher.SwitchMMD
 import com.mudita.mmd.components.radio_button.RadioButtonMMD
 import com.mudita.mmd.components.text.TextMMD
 import com.mudita.mmd.components.top_app_bar.TopAppBarMMD
+import com.wanderwildwood.hitome.ui.DarkMode
 import com.wanderwildwood.hitome.ui.PagedColumn
 import com.wanderwildwood.hitome.ui.EInkDialog
 import com.wanderwildwood.hitome.ui.HouseButton
@@ -252,6 +253,13 @@ private fun MainScreen() {
             }
             item {
                 Row(title = stringResource(R.string.text_size), value = stringResource(TEXT_SIZE_NAMES[textSize])) { pickingSize = true }
+            }
+            item {
+                SwitchRow(
+                    title = stringResource(R.string.settings_dark),
+                    note = stringResource(R.string.settings_dark_note),
+                    checked = DarkMode.on,
+                ) { DarkMode.set(context, !DarkMode.on) }
             }
 
             // One list of every app on the phone, the shop's and everyone else's, on its own page.
