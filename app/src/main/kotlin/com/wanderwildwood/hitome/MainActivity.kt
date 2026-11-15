@@ -68,6 +68,12 @@ import java.time.temporal.WeekFields
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -435,7 +441,7 @@ private fun MainScreen() {
             Spacer(Modifier.height(6.dp))
             TEXT_SIZE_NAMES.forEachIndexed { i, name ->
                 androidx.compose.foundation.layout.Row(
-                    Modifier.fillMaxWidth().clickable {
+                    Modifier.fillMaxWidth().semantics { role = Role.RadioButton; selected = i == textSize }.clickable {
                         textSize = i
                         Glance.setTextSize(context, i)
                         pickingSize = false
@@ -729,7 +735,7 @@ private fun appsOnCount(context: android.content.Context): Int {
 @Composable
 private fun SwitchRow(title: String, note: String?, checked: Boolean, onClick: () -> Unit) {
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).heightIn(min = 48.dp).padding(vertical = 12.dp),
+        Modifier.fillMaxWidth().semantics { role = Role.Switch; toggleableState = ToggleableState(checked) }.clickable(onClick = onClick).heightIn(min = 48.dp).padding(vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Column(Modifier.weight(1f)) {
