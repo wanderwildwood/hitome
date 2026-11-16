@@ -65,7 +65,7 @@ fun GlancePanel(
     // units, which are the phone's dp times [scale].
     val outer = LocalDensity.current
     CompositionLocalProvider(LocalDensity provides Density(outer.density * scale, outer.fontScale)) {
-        ThemeMMD(colorScheme = monochrome, typography = houseTypography) {
+        ThemeMMD(colorScheme = monochrome, typography = houseTypography) { DarkSelection {
             // With the words shown, each app has a line of its own; without, the names share lines.
             val withText = notices.any { it.text != null }
             // Without words, Messaging's and Email's entries have nothing to add to their counts.
@@ -105,7 +105,7 @@ fun GlancePanel(
                 }
                 if (fitted.isNotEmpty() || counts.isNotEmpty() || noticeLines > 0) Rule()
             }
-        }
+        } }
     }
 }
 

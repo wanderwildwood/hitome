@@ -74,11 +74,12 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.toggleableState
+import com.wanderwildwood.hitome.ui.DarkSelection
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContent { ThemeMMD(colorScheme = monochrome, typography = houseTypography) { MainScreen() } }
+        setContent { ThemeMMD(colorScheme = monochrome, typography = houseTypography) { DarkSelection { MainScreen() } } }
     }
 }
 
