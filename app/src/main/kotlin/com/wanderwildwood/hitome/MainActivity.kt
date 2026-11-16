@@ -263,7 +263,7 @@ private fun MainScreen() {
             item {
                 SwitchRow(
                     title = stringResource(R.string.settings_dark),
-                    note = stringResource(R.string.settings_dark_note),
+                    note = null,
                     checked = DarkMode.on,
                 ) { DarkMode.set(context, !DarkMode.on) }
             }
