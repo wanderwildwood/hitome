@@ -319,11 +319,17 @@ private fun fit(stacked: List<Glance.Section>, order: List<String>, footDp: Int,
         val n = shown[i]
         if (n >= section.lines.size) section
         else {
-            val more = stringResource(R.string.panel_more).format(section.lines.size - (n - 1))
+            val more = stringResource(R.string.panel_more).format(leftOut(section.lines.drop(n - 1)))
             section.copy(lines = section.lines.take(n - 1) + Glance.Line(null, more, false))
         }
     }
 }
+
+/**
+ * How many things the lines a part gives up stand for: one each, except the app's own "and n
+ * more" line, which stands for its n (marked by the app, so this holds in any language).
+ */
+internal fun leftOut(cut: List<Glance.Line>): Int = cut.sumOf { if (it.more > 0) it.more else 1 }
 
 /** The fewest lines a part is drawn in: all of one or two, else its first and "+N more". */
 private fun leastLines(section: Glance.Section) = minOf(section.lines.size, 2)

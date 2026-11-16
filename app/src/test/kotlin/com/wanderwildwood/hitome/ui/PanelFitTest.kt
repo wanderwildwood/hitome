@@ -29,4 +29,10 @@ class PanelFitTest {
         val least = RULE_DP + 2 * (RULE_DP + PAD_DP + HEADING_DP + 2 * LINE_DP)
         assertEquals(listOf(2, 4), shownLines(stacked, order, 0, least + 2 * LINE_DP))
     }
+
+    @Test fun anAppsOwnMoreLineCountsAsWhatItSays() {
+        val cut = listOf(Glance.Line(null, "and 3 more", false, more = 3), Glance.Line(null, "Shopping", false))
+        assertEquals(4, leftOut(cut))
+        assertEquals(2, leftOut(List(2) { Glance.Line(null, "line $it", false) }))
+    }
 }

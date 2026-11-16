@@ -15,11 +15,14 @@ import android.provider.Settings
  * the person chose ([order]) and opens the app that wrote them when they are pressed.
  *
  * Columns, one row per line: `heading` (on the first row, optional), `lead` (a short left
- * column such as a time or a temperature, optional), `text`, and `bold` (1 or 0).
+ * column such as a time or a temperature, optional), `text`, and `bold` (1 or 0). Optional too,
+ * `more`: on an app's own "and 3 more" line, the number of things it stands for, so that a
+ * line cut by the panel's "+N more" is counted as what it says rather than as one line.
  */
 object Glance {
 
-    data class Line(val lead: String?, val text: String, val bold: Boolean)
+    /** [more]: the number of things this line stands for when it is the app's own "and n more"; else 0. */
+    data class Line(val lead: String?, val text: String, val bold: Boolean, val more: Int = 0)
 
     /**
      * [key] is the section's place in [order]: its source, or [UNREAD] for the counts. Today's
@@ -397,6 +400,7 @@ object Glance {
         val text = c.getColumnIndex("text")
         val bold = c.getColumnIndex("bold")
         val playingAt = c.getColumnIndex("playing")
+        val moreAt = c.getColumnIndex("more")
         if (text < 0) return null
         var playing: Boolean? = null
         var title: String? = null
@@ -409,10 +413,11 @@ object Glance {
                 lead = if (lead >= 0) c.getString(lead)?.takeIf { it.isNotBlank() } else null,
                 text = t,
                 bold = bold >= 0 && c.getInt(bold) == 1,
+                more = if (moreAt >= 0 && !c.isNull(moreAt)) c.getInt(moreAt).coerceAtLeast(0) else 0,
             )
         }
         return if (lines.isEmpty()) null else Section(packageName, title, lines, playing = playing)
     }
 
-    val COLUMNS = arrayOf("heading", "lead", "text", "bold", "playing")
+    val COLUMNS = arrayOf("heading", "lead", "text", "bold", "playing", "more")
 }
