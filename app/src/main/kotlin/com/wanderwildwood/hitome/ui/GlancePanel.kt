@@ -48,8 +48,8 @@ internal const val PANEL_WIDTH_DP = 240
  * are one part. Pressing a section, a count or a name opens the app it came from.
  *
  * [roomDp] is the height there is before a music strip or the padlock. When not everything fits,
- * the parts earlier in the order win ([chosen]), and today's events give up lines to fit and say
- * how many they left out.
+ * the parts earlier in the order win ([chosen]), and a part with a list gives up lines to fit and says
+ * how many it left out.
  */
 @Composable
 fun GlancePanel(
@@ -80,7 +80,7 @@ fun GlancePanel(
             val noticeLines = noticeRows.size + textLines.size
             val footDp = if (counts.isEmpty() && noticeLines == 0) 0
                 else RULE_DP + PAD_DP + (if (counts.isNotEmpty()) LINE_DP else 0) + noticeLines * LINE_DP
-            val fitted = fit(keptSections.filter { it.key != Glance.UNREAD }, footDp, roomDp)
+            val fitted = fit(keptSections.filter { it.key != Glance.UNREAD }, order, footDp, roomDp)
             Column(Modifier.fillMaxWidth().background(Color.White)) {
                 order.forEach { key ->
                     if (key == Glance.UNREAD) {
@@ -306,25 +306,41 @@ private fun textLines(notices: List<Notices.Notice>): List<TextLine> {
 }
 
 /**
- * Today's events give up lines from their end until everything fits in [roomDp], and say how
- * many they left out. They always keep their first line: "+3 more" on its own says there is
- * something today without saying what. Nothing else is cut; what else does not fit was left
- * out whole by [chosen].
+ * A part with more lines than fit gives up lines from its end and says how many it left out,
+ * whichever app it comes from: today's events, the tasks due today, anything with a list. Each
+ * always keeps its first line: "+3 more" on its own says there is something without saying
+ * what. The room goes to the parts in the person's [order], each already sure of its least
+ * height ([leastLines]); a part that does not fit even so was left out whole by [chosen].
  */
 @Composable
-private fun fit(stacked: List<Glance.Section>, footDp: Int, roomDp: Int): List<Glance.Section> {
-    val today = stacked.firstOrNull { it.key == Glance.CALENDAR } ?: return stacked
-    val rest = stacked.filter { it !== today }
-    fun height(todayLines: Int) =
-        sectionDp(today, todayLines) + rest.sumOf { sectionDp(it, it.lines.size) } + footDp + RULE_DP
-    val all = today.lines.size
-    if (height(all) <= roomDp) return stacked
-    // Shown lines plus the "+N more" line; at least one real line whatever the room.
-    var shown = all - 1
-    while (shown > 1 && height(shown + 1) > roomDp) shown--
-    val more = stringResource(R.string.panel_more).format(all - shown)
-    val cut = today.copy(lines = today.lines.take(shown) + Glance.Line(null, more, false))
-    return stacked.map { if (it === today) cut else it }
+private fun fit(stacked: List<Glance.Section>, order: List<String>, footDp: Int, roomDp: Int): List<Glance.Section> {
+    val shown = shownLines(stacked, order, footDp, roomDp)
+    return stacked.mapIndexed { i, section ->
+        val n = shown[i]
+        if (n >= section.lines.size) section
+        else {
+            val more = stringResource(R.string.panel_more).format(section.lines.size - (n - 1))
+            section.copy(lines = section.lines.take(n - 1) + Glance.Line(null, more, false))
+        }
+    }
+}
+
+/** The fewest lines a part is drawn in: all of one or two, else its first and "+N more". */
+private fun leastLines(section: Glance.Section) = minOf(section.lines.size, 2)
+
+/**
+ * How many lines each of [stacked] is drawn in, the "+N more" line counted, in [roomDp]: every
+ * part its least, then what room is left line by line to the parts in [order].
+ */
+internal fun shownLines(stacked: List<Glance.Section>, order: List<String>, footDp: Int, roomDp: Int): List<Int> {
+    val shown = stacked.map { leastLines(it) }.toMutableList()
+    var spare = (roomDp - footDp - RULE_DP - stacked.indices.sumOf { sectionDp(stacked[it], shown[it]) }) / LINE_DP
+    stacked.indices.sortedBy { i -> order.indexOf(stacked[i].key).let { if (it < 0) Int.MAX_VALUE else it } }.forEach { i ->
+        val give = minOf(stacked[i].lines.size - shown[i], maxOf(spare, 0))
+        shown[i] += give
+        spare -= give
+    }
+    return shown
 }
 
 private fun sectionDp(section: Glance.Section, lines: Int) =
@@ -332,8 +348,7 @@ private fun sectionDp(section: Glance.Section, lines: Int) =
 
 /**
  * Each part of [order] that has something to show, with the least height it can be drawn in, in
- * dp: today's events cut to their first line and "+N more", as [fit] leaves them, and everything
- * else whole. Other apps' notifications are counted at the most lines they can take, since how
+ * dp: a part with a list cut to its first line and "+N more", as [fit] can leave it. Other apps' notifications are counted at the most lines they can take, since how
  * they pack is known only once measured.
  */
 private fun parts(
@@ -350,8 +365,7 @@ private fun parts(
         else key to RULE_DP + PAD_DP + (if (counts) LINE_DP else 0) + noticeLines * LINE_DP
     } else {
         val section = sections.firstOrNull { it.key == key } ?: return@mapNotNull null
-        val lines = if (key == Glance.CALENDAR) minOf(section.lines.size, 2) else section.lines.size
-        key to sectionDp(section, lines)
+        key to sectionDp(section, leastLines(section))
     }
 }
 
