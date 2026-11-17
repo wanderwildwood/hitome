@@ -66,13 +66,16 @@ object QuietHours {
     fun setEnd(context: Context, time: LocalTime) = save(context) { putInt(KEY_END, time.hour * 60 + time.minute) }
     fun setDays(context: Context, days: Set<DayOfWeek>) = save(context) { putInt(KEY_DAYS, bits(days)) }
     fun setRepeatCallers(context: Context, on: Boolean) {
-        save(context) { putBoolean(KEY_REPEAT, on) }
-        // The rule's policy carries this, so the rule is told.
-        val id = ruleId(context) ?: return
-        val nm = manager(context)
-        try {
-            nm.getAutomaticZenRule(id)?.let { it.zenPolicy = policy(on); nm.updateAutomaticZenRule(id, it) }
-        } catch (_: Exception) {}
+        prefs(context).edit().putBoolean(KEY_REPEAT, on).apply()
+        // The rule's policy carries this, so the rule is told; then the rule is put right for
+        // now, since an update can leave it off until the next look.
+        ruleId(context)?.let { id ->
+            val nm = manager(context)
+            try {
+                nm.getAutomaticZenRule(id)?.let { it.zenPolicy = policy(on); nm.updateAutomaticZenRule(id, it) }
+            } catch (_: Exception) {}
+        }
+        sync(context)
     }
 
     private fun save(context: Context, edit: android.content.SharedPreferences.Editor.() -> Unit) {
