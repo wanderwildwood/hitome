@@ -257,6 +257,10 @@ object Glance {
     /** Calendar (koyomi), whose own lines take the place of Glance's reading of today. */
     const val CALENDAR = "com.wanderwildwood.koyomi"
 
+    /** The most lines read from one app, and the longest any of them is kept. */
+    private const val MAX_LINES = 200
+    private const val MAX_CHARS = 500
+
     const val SKY = "com.wanderwildwood.soramoyo"
 
     const val BITCOIN = "com.wanderwildwood.zeni"
@@ -405,12 +409,13 @@ object Glance {
         var playing: Boolean? = null
         var title: String? = null
         val lines = mutableListOf<Line>()
-        while (c.moveToNext()) {
-            if (title == null && heading >= 0) title = c.getString(heading)?.takeIf { it.isNotBlank() }
-            val t = c.getString(text)?.takeIf { it.isNotBlank() } ?: continue
+        // However much an app hands back, only so many lines, each of a lock screen's length.
+        while (lines.size < MAX_LINES && c.moveToNext()) {
+            if (title == null && heading >= 0) title = c.getString(heading)?.takeIf { it.isNotBlank() }?.take(MAX_CHARS)
+            val t = c.getString(text)?.takeIf { it.isNotBlank() }?.take(MAX_CHARS) ?: continue
             if (playingAt >= 0 && playing == null && !c.isNull(playingAt)) playing = c.getInt(playingAt) == 1
             lines += Line(
-                lead = if (lead >= 0) c.getString(lead)?.takeIf { it.isNotBlank() } else null,
+                lead = if (lead >= 0) c.getString(lead)?.takeIf { it.isNotBlank() }?.take(MAX_CHARS) else null,
                 text = t,
                 bold = bold >= 0 && c.getInt(bold) == 1,
                 more = if (moreAt >= 0 && !c.isNull(moreAt)) c.getInt(moreAt).coerceAtLeast(0) else 0,

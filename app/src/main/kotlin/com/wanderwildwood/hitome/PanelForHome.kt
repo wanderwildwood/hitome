@@ -18,7 +18,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
 
 /**
- * The panel's lines for a home screen: inkOS:wndr (com.wanderwildwood.iori), which draws them
+ * The panel's lines for a home screen: Home (com.wanderwildwood.iori), which draws them
  * under its apps. `content://com.wanderwildwood.hitome.panel/lines`, read-only.
  *
  * It hands over what the lock screen would show from the apps that take part - the same
@@ -153,8 +153,10 @@ class PanelForHome : ContentProvider() {
     private fun answerOne(context: Context, pkg: String, calendarInstalled: Boolean, signal: CancellationSignal): Answer {
         val pm = context.packageManager
         if (pkg == Glance.CALENDAR && !calendarInstalled) {
-            // Glance's own reading of today takes Calendar's place, as on the lock screen.
+            // Glance's own reading of today takes Calendar's place, as on the lock screen, and
+            // is handed to Home only while that place is on, as the lock screen shows it.
             if (!Today.enabled(context)) return Answer(NOT_INSTALLED)
+            if (!Glance.shownHere(context, pkg)) return Answer(OFF_GLANCE)
             return Answer(ON, Today.read(context))
         }
         val installed = try {

@@ -125,11 +125,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
             addAction(Intent.ACTION_POWER_CONNECTED)
             addAction(Intent.ACTION_POWER_DISCONNECTED)
         })
-        ((Glance.STACKED + Glance.COUNTS + Glance.discovered(service)).map { Glance.uri(it) } + Today.watched(service)).forEach { uri ->
-            try {
-                service.contentResolver.registerContentObserver(uri, true, changes)
-            } catch (_: Exception) {}
-        }
+        watch()
         scope?.launch {
             Notices.now.collect {
                 notices.value = it
@@ -153,6 +149,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         remove()
         try { service.unregisterReceiver(screenReceiver) } catch (_: Exception) {}
         try { service.contentResolver.unregisterContentObserver(changes) } catch (_: Exception) {}
+        watchedFor = null
         HomeDark.watch(service, false)
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         store.clear()
@@ -160,15 +157,33 @@ class LockscreenPanel(private val service: AccessibilityService) :
 
     /** The apps shown and whether each is switched on, to tell when the choice has changed. */
     private fun sourcesKey(): List<String> =
-        Glance.sources(Glance.order(service)).map { if (Glance.shownHere(service, it)) "+$it" else "-$it" }
+        Glance.sources(Glance.order(service)).map { if (Glance.shownHere(service, it)) "+$it" else "-$it" } +
+            // Today's events switch and the calendar grant change what is read just as much.
+            listOf("today=${Today.enabled(service)}", "calendars=${Today.canReadCalendars(service)}")
 
     private var lastReadAt = 0L
     private var lastReadSources: List<String>? = null
+
+    /** The sources as they were when the observers were last set: an app put on later, or a calendar grant, is watched too. */
+    private var watchedFor: List<String>? = null
+
+    private fun watch() {
+        val key = sourcesKey() + Glance.discovered(service)
+        if (key == watchedFor) return
+        watchedFor = key
+        try { service.contentResolver.unregisterContentObserver(changes) } catch (_: Exception) {}
+        ((Glance.STACKED + Glance.COUNTS + Glance.discovered(service)).map { Glance.uri(it) } + Today.watched(service)).forEach { uri ->
+            try {
+                service.contentResolver.registerContentObserver(uri, true, changes)
+            } catch (_: Exception) {}
+        }
+    }
 
     private fun readAll() {
         val s = scope ?: return
         lastReadAt = SystemClock.elapsedRealtime()
         lastReadSources = sourcesKey()
+        watch()
         reading?.cancel()
         reading = s.launch {
             sections.value = withContext(Dispatchers.IO) {
