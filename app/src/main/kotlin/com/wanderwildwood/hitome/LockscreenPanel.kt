@@ -96,6 +96,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
             if (intent.action == Intent.ACTION_SCREEN_ON && QuietHours.enabled(context)) QuietHours.sync(context)
             // A new look at the lock screen: whether its items can be read is learned afresh.
             if (intent.action == Intent.ACTION_SCREEN_OFF) sawLockScreen = false
+            // Home's dark switch may have been pressed since the panel was last up.
+            if (intent.action == Intent.ACTION_SCREEN_ON) HomeDark.ask(context)
             evaluate()
         }
     }
@@ -140,6 +142,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
                 evaluate()
             }
         }
+        HomeDark.watch(service, true)
         readAll()
     }
 
@@ -150,6 +153,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
         remove()
         try { service.unregisterReceiver(screenReceiver) } catch (_: Exception) {}
         try { service.contentResolver.unregisterContentObserver(changes) } catch (_: Exception) {}
+        HomeDark.watch(service, false)
         lifecycleRegistry.currentState = Lifecycle.State.DESTROYED
         store.clear()
     }
@@ -362,8 +366,9 @@ class LockscreenPanel(private val service: AccessibilityService) :
         try {
             service.getSystemService(WindowManager::class.java).addView(view, params)
             // A window of its own, which dark mode reaches only when handed over; from then on
-            // it turns with the phone's dark setting and the app's switch while it is up.
+            // it turns with the phone's dark setting, the app's switch and Home's while it is up.
             DarkMode.window(view)
+            HomeDark.ask(service)
             overlay = view
             overlayTop = top
             overlayRoom = room
