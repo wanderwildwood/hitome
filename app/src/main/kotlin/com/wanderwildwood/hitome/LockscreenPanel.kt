@@ -37,6 +37,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.wanderwildwood.hitome.ui.GlancePanel
 import com.wanderwildwood.hitome.ui.firstDp
 import com.wanderwildwood.hitome.ui.leastDp
+import com.wanderwildwood.hitome.ui.DarkMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -360,6 +361,9 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
         try {
             service.getSystemService(WindowManager::class.java).addView(view, params)
+            // A window of its own, which dark mode reaches only when handed over; from then on
+            // it turns with the phone's dark setting and the app's switch while it is up.
+            DarkMode.window(view)
             overlay = view
             overlayTop = top
             overlayRoom = room
