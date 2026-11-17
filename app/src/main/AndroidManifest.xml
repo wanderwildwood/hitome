@@ -2,7 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!--
-      No permissions at all, and no INTERNET. It reads what the other apps hand it through their own
+      No INTERNET, and only the permissions below, each explained where it is. It reads what the other apps hand it through their own
       providers, which answer this app alone, and draws it over the lock screen as an
       accessibility service - a switch the phone's owner turns on in Accessibility.
 
@@ -43,7 +43,7 @@
         <package android:name="com.wanderwildwood.zeni" />
         <package android:name="com.wanderwildwood.kotozute" />
         <package android:name="com.wanderwildwood.tayori" />
-        <!-- inkOS:wndr, the one app the panel's lines are handed to (PanelForHome). -->
+        <!-- Home, the one app the panel's lines are handed to (PanelForHome). -->
         <package android:name="com.wanderwildwood.iori" />
         <package android:name="com.mudita.calendar" />
         <provider android:authorities="com.mudita.calendar" />
@@ -129,7 +129,7 @@
             </intent-filter>
         </receiver>
 
-        <!-- The panel's lines for inkOS:wndr's home screen. Exported with no permission because
+        <!-- The panel's lines for Home's home screen. Exported with no permission because
              it checks the caller's package and signing certificate itself; see PanelForHome.kt. -->
         <provider
             android:name=".PanelForHome"

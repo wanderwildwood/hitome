@@ -12,6 +12,8 @@ today's events itself, if you turn that on. It has no network access and sends n
   pinned notes, the names of today's tickets, what is playing, the bitcoin price, and two unread counts - never a
   message, a sender or a subject. Each app hands over nothing while its own lock-screen switch
   is off.
+- **Any other app that offers lines the same way**, found by its own provider: it is listed in
+  Glance's apps, off until you switch it on, and read only then.
 - **Today's events, without Datebook - only if you turn it on.** On a phone without
   [Datebook](https://github.com/wanderwildwood/koyomi), **Today's events** (off until you turn it
   on) reads what is left of today, titles and times only. From Mudita's own Calendar, which
@@ -22,7 +24,8 @@ today's events itself, if you turn that on. It has no network access and sends n
 - **The lock screen itself**, through the accessibility service: only where its own items end,
   so the panel can sit under them, and whether the PIN pad is up, so the panel can stand aside.
   The service listens to the system UI alone (`app/src/main/res/xml/glance_service.xml`) and
-  reads nothing from any other app.
+  reads nothing from any other app, except that with Katapult it looks at where Katapult's
+  lock-screen widgets sit, their position only, to fit around them.
 - **Other apps' notifications, counted - only if you turn it on.** This is Android's notification
   access, off until you switch it on for Glance, and it is the one place Glance could see more
   than it shows: Android gives notification access to every notification. Glance uses it to
@@ -61,8 +64,8 @@ asks for the phone's lock before opening anything, so a PIN still protects what 
 
 ## What it hands on
 
-Glance hands the panel's lines to one app only, inkOS:wndr (`com.wanderwildwood.iori`), to draw
-on its home screen, and only when that app is signed with inkOS:wndr's own release certificate:
+Glance hands the panel's lines to one app only, Home (`com.wanderwildwood.iori`), to draw
+on its home screen, and only when that app is signed with Home's own release certificate:
 the same lines from the apps that take part, in your order and with your switches here, and for
 each app whether it shows and why (on, off in the app, off in Glance, not installed, needs an
 update, did not answer); and, when today's events are on here on a phone without Datebook, the
@@ -71,8 +74,9 @@ The code is `app/src/main/kotlin/com/wanderwildwood/hitome/PanelForHome.kt`.
 
 ## What it stores
 
-The list of apps you chose, whether to show what they say, whether to read today's events, and
-the times and days of Quiet hours, and nothing else: no history and no copy of what it shows.
+Your choices: the apps, their order, the text size, its switches (what notifications say,
+today's events, the torch, Ring for calls only, Quiet hours and its times and days, whether
+repeat callers ring), and nothing else: no history and no copy of what it shows.
 
 ## Checking for yourself
 

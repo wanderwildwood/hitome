@@ -173,10 +173,10 @@ there.
 
 ## On the home screen
 
-Glance can hand the panel's lines to inkOS:wndr, to draw on its home screen under the apps: the
+Glance can hand the panel's lines to Home, to draw on its home screen under the apps: the
 same apps, in the order and with the switches chosen here, and for each one whether it shows and
 why (on, off in the app, off in Glance, not installed, needs an update, did not answer). Other
-apps' notifications are never part of it. It answers only inkOS:wndr, checked by its package name
+apps' notifications are never part of it. It answers only Home, checked by its package name
 and the certificate its releases are signed with; any other app that asks gets nothing.
 
 ## Credit
