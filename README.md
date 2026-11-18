@@ -190,6 +190,6 @@ The way the panel is drawn above the lock screen, and when it is taken down, fol
 
 ## License
 
-**GNU General Public License, version 3.** See [LICENSE](LICENSE).
+**GNU General Public License, version 3 only.** See [LICENSE](LICENSE).
 
 Copyright © wander wildwood.
