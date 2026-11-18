@@ -537,10 +537,24 @@ class LockscreenPanel(private val service: AccessibilityService) :
     /**
      * The power menu (long press on the power key) is a system window, not an app's, so
      * [appOverLockScreen] does not see it; without this the panel sat over Power off and Restart.
-     * Android names that window "ActionsDialog".
+     * Accessibility gives that window Android's own "global_actions" string as its title
+     * ("Phone options" in English), looked up here so it matches in every language.
      */
+    private val powerMenuTitle: String? by lazy {
+        try {
+            val res = android.content.res.Resources.getSystem()
+            val id = res.getIdentifier("global_actions", "string", "android")
+            if (id != 0) res.getString(id) else null
+        } catch (_: Exception) {
+            null
+        }
+    }
+
     private fun powerMenuShowing(): Boolean = try {
-        service.windows.any { it.title?.toString() == POWER_MENU_TITLE }
+        val title = powerMenuTitle
+        title != null && service.windows.any {
+            it.type == AccessibilityWindowInfo.TYPE_SYSTEM && it.title?.toString() == title
+        }
     } catch (_: Exception) {
         false
     }
@@ -560,7 +574,6 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private companion object {
         const val SYSTEM_UI = "com.android.systemui"
         const val KATAPULT = "com.gezimos.katapult"
-        const val POWER_MENU_TITLE = "ActionsDialog"
         // The width of the lock screen's own dotted rules, so the panel lines up under them.
         const val WIDTH_DP = com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP.toFloat()
         const val GAP_DP = 8f
