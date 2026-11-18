@@ -103,35 +103,56 @@ object Notices {
  */
 class NoticeListener : NotificationListenerService() {
 
+    /** The phone's own lock-screen notification settings, watched so a change counts at once. */
+    private val lockScreenSettings = object : android.database.ContentObserver(android.os.Handler(android.os.Looper.getMainLooper())) {
+        override fun onChange(selfChange: Boolean) = recount()
+    }
+
     override fun onListenerConnected() {
         instance = this
+        for (key in listOf(SHOW_ON_LOCK_SCREEN, ALLOW_PRIVATE)) {
+            runCatching { contentResolver.registerContentObserver(Settings.Secure.getUriFor(key), false, lockScreenSettings) }
+        }
         recount()
     }
 
     override fun onListenerDisconnected() {
         if (instance === this) instance = null
+        runCatching { contentResolver.unregisterContentObserver(lockScreenSettings) }
         Notices.publish(emptyList())
     }
 
-    override fun onNotificationPosted(sbn: android.service.notification.StatusBarNotification?) = recount()
+    // The ranking that comes with each change, not currentRanking read afterwards: that can
+    // still be the one from before, and a notification made private a moment ago would show.
+    override fun onNotificationPosted(sbn: android.service.notification.StatusBarNotification?, rankingMap: RankingMap?) = recount(rankingMap)
 
-    override fun onNotificationRemoved(sbn: android.service.notification.StatusBarNotification?) = recount()
+    override fun onNotificationRemoved(sbn: android.service.notification.StatusBarNotification?, rankingMap: RankingMap?) = recount(rankingMap)
+
+    /** A channel or an app's lock-screen visibility changed. */
+    override fun onNotificationRankingUpdate(rankingMap: RankingMap?) = recount(rankingMap)
 
     override fun onDestroy() {
         if (instance === this) instance = null
+        runCatching { contentResolver.unregisterContentObserver(lockScreenSettings) }
         Notices.publish(emptyList())
         super.onDestroy()
     }
 
-    fun recount() {
+    fun recount(given: RankingMap? = null) {
         val chosen = Notices.chosen(this)
         val showText = Notices.showText(this)
         if (chosen.isEmpty() && !showText) {
             Notices.publish(emptyList())
             return
         }
+        // The phone set to show no notifications on the lock screen: Glance shows none of them
+        // either, neither counts nor words.
+        if (Settings.Secure.getInt(contentResolver, SHOW_ON_LOCK_SCREEN, 1) == 0) {
+            Notices.publish(emptyList())
+            return
+        }
         val active = try { activeNotifications?.toList() } catch (_: Exception) { null } ?: emptyList()
-        val ranking = try { currentRanking } catch (_: Exception) { null }
+        val ranking = given ?: try { currentRanking } catch (_: Exception) { null }
         val rank = Ranking()
         val defaultSms = try { Telephony.Sms.getDefaultSmsPackage(this) } catch (_: Exception) { null }
         // Newest first, so the app that just spoke leads the line.
@@ -189,7 +210,7 @@ class NoticeListener : NotificationListenerService() {
         ranking: RankingMap?,
         rank: Ranking,
     ): String? {
-        val allowPrivate = Settings.Secure.getInt(contentResolver, "lock_screen_allow_private_notifications", 1) != 0
+        val allowPrivate = Settings.Secure.getInt(contentResolver, ALLOW_PRIVATE, 1) != 0
         val override = if (ranking != null && ranking.getRanking(sbn.key, rank)) rank.lockscreenVisibilityOverride
             else NotificationManagerVisibilityNone
         val private = override == Notification.VISIBILITY_PRIVATE ||
@@ -214,6 +235,10 @@ class NoticeListener : NotificationListenerService() {
     companion object {
         /** `NotificationManager.VISIBILITY_NO_OVERRIDE`: neither the owner nor the channel set one. */
         private const val NotificationManagerVisibilityNone = -1000
+
+        /** Settings.Secure keys behind Android's lock-screen notification choices (hidden in the SDK). */
+        private const val SHOW_ON_LOCK_SCREEN = "lock_screen_show_notifications"
+        private const val ALLOW_PRIVATE = "lock_screen_allow_private_notifications"
 
         @Volatile
         var instance: NoticeListener? = null

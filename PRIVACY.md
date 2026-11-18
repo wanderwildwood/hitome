@@ -26,6 +26,8 @@ today's events itself, if you turn that on. It has no network access and sends n
   The service listens to the system UI alone (`app/src/main/res/xml/glance_service.xml`) and
   reads nothing from any other app, except that with Katapult it looks at where Katapult's
   lock-screen widgets sit, their position only, to fit around them.
+- **Whether DuraSpeed is on the phone** (a Kompakt's background manager), only to show the
+  **Open DuraSpeed** row in Settings, which opens DuraSpeed's App info page when you press it.
 - **Other apps' notifications, counted - only if you turn it on.** This is Android's notification
   access, off until you switch it on for Glance, and it is the one place Glance could see more
   than it shows: Android gives notification access to every notification. Glance uses it to
@@ -34,7 +36,8 @@ today's events itself, if you turn that on. It has no network access and sends n
   and then only the newest from each chosen app, to put on the lock screen. Where Android would
   hide a notification's content on the lock screen - the phone set to hide private content, and
   the notification or its channel marked private - Glance shows its public version or nothing
-  but the count. Left uncounted: ongoing ones (a player, a download), a
+  but the count. With the phone set to show no notifications on the lock screen at all, Glance
+  counts none and shows none of their words. Left uncounted: ongoing ones (a player, a download), a
   group's summary, and anything the app or you have marked secret on the lock screen. Datebook,
   Sky, Messaging and Mailbox are never counted this way; they have their own place on the panel.
   With **Show what they say** on, Messaging's and Mailbox's newest notification is read too, for

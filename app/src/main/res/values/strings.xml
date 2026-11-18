@@ -67,7 +67,7 @@
     <string name="access_off_note">Turn on notification access for Glance to count other apps\' notifications.</string>
     <string name="show_text">Show what they say</string>
     <string name="show_text_note">The newest from each chosen app, and from Messaging and Mailbox, on the lock screen, where anyone holding the phone can read it.</string>
-    <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden.</string>
+    <string name="others_note">Otherwise only each app\'s name and how many. Whatever Android hides on the lock screen stays hidden, and with the phone set to show no notifications there, Glance shows none.</string>
     <string name="sound_heading">Sound</string>
     <string name="quiet">Ring for calls only</string>
     <string name="quiet_note">Calls and alarms ring. Every other notification comes in silent, and still shows on the lock screen and in Glance.</string>
@@ -93,6 +93,10 @@
     <string name="ok">OK</string>
     <string name="done">Done</string>
     <string name="torch_heading">Torch</string>
+    <!-- Settings, only on a phone with DuraSpeed (a Kompakt): opens DuraSpeed's App info page -->
+    <string name="duraspeed_heading">Kompakt</string>
+    <string name="duraspeed_open">Open DuraSpeed</string>
+    <string name="duraspeed_note">DuraSpeed closes apps a few minutes after the screen goes dark, and then the lock screen stops changing. Tap Open on its page and switch Glance on. On means allowed.</string>
     <string name="torch">Power pressed twice</string>
     <!-- On the lock-screen panel while the torch is on; pressing it turns the torch off -->
     <string name="torch_on_line">Torch on. Press to turn off.</string>
