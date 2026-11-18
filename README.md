@@ -6,6 +6,9 @@ the app it belongs to, and each has its own switch.
 
 *Hitome* is 一目 — one look, a glance.
 
+Dark mode, a switch in Settings, reaches the lock-screen panel too; the panel also follows the
+phone's dark setting and Home's dark switch.
+
 | | |
 |---|---|
 | ![Glance: the switches for each part](screenshots/1-app.png) | ![The order, and the other apps' notifications](screenshots/2-more.png) |
