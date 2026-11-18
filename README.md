@@ -115,12 +115,12 @@ own, turned on and off by an alarm at each start and end. Turning the phone's ow
 off during quiet hours ends that night's; the next night's comes as usual. It needs notification
 access.
 
-**Power pressed twice**, under **Torch**, turns the torch on or off with two quick presses of the
+**Power pressed twice**, under **Flashlight**, turns the flashlight on or off with two quick presses of the
 power key, locked or not. The Kompakt has Android's own double press switched off, and no app can
 hear the power key, so Glance watches the screen go on and off instead: two changes within about
-half a second are two presses. It is the white light, the camera's torch: Mudita's warm light
+half a second are two presses. It is the white light, the camera's flashlight: Mudita's warm light
 answers only Mudita's own apps, and Mudita's control panel does not show this one as on. So while
-it is on, the panel says **Torch on** at the top; press it to turn the torch off. It is off until
+it is on, the panel says **Flashlight on** at the top; press it to turn the flashlight off. It is off until
 you turn it on, and works while Glance is on in Accessibility. With fingerprint unlock on, press with a
 finger that is not enrolled: the power key reads fingerprints, and an enrolled one unlocks the
 phone.

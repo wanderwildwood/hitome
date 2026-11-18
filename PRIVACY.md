@@ -54,8 +54,8 @@ today's events itself, if you turn that on. It has no network access and sends n
   at the times you set with an alarm, and removes it when you turn Quiet hours off. It keeps the
   times and days you set, and nothing about calls. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/QuietHours.kt`.
-- **The torch, only if you turn on Power pressed twice.** Glance notes when the screen goes on
-  and off, keeps nothing of it, and switches the torch. It does not open the camera. The code is
+- **The flashlight, only if you turn on Power pressed twice.** Glance notes when the screen goes on
+  and off, keeps nothing of it, and switches the flashlight. It does not open the camera. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Torch.kt`.
 - **Home's dark switch**, so Glance and its panel can follow it. Glance asks Home
   (`com.wanderwildwood.iori`), and only Home's own release, whether that switch is on and when it
@@ -84,7 +84,7 @@ The code is `app/src/main/kotlin/com/wanderwildwood/hitome/PanelForHome.kt`.
 ## What it stores
 
 Your choices: the apps, their order, the text size, its switches (what notifications say,
-today's events, the torch, Ring for calls only, Quiet hours and its times and days, whether
+today's events, the flashlight, Ring for calls only, Quiet hours and its times and days, whether
 repeat callers ring, dark mode), what Home's dark switch last said and when, and nothing else:
 no history and no copy of what it shows.
 

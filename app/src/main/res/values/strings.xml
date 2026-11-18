@@ -92,15 +92,15 @@
     <string name="cancel">Cancel</string>
     <string name="ok">OK</string>
     <string name="done">Done</string>
-    <string name="torch_heading">Torch</string>
+    <string name="torch_heading">Flashlight</string>
     <!-- Settings, only on a phone with DuraSpeed (a Kompakt): opens DuraSpeed's App info page -->
     <string name="duraspeed_heading">Kompakt</string>
     <string name="duraspeed_open">Open DuraSpeed</string>
     <string name="duraspeed_note">DuraSpeed closes apps a few minutes after the screen goes dark, and then the lock screen stops changing. Tap Open on its page and switch Glance on. On means allowed.</string>
     <string name="torch">Power pressed twice</string>
-    <!-- On the lock-screen panel while the torch is on; pressing it turns the torch off -->
-    <string name="torch_on_line">Torch on. Press to turn off.</string>
-    <string name="torch_note">Two quick presses of the power key turn the torch on or off, even while the phone is locked. While it is on, the lock screen says so; press that line to turn it off. Needs \"Glance on the lock screen\" switched on in Accessibility.</string>
+    <!-- On the lock-screen panel while the flashlight is on; pressing it turns the flashlight off -->
+    <string name="torch_on_line">Flashlight on. Press to turn off.</string>
+    <string name="torch_note">Two quick presses of the power key turn the flashlight on or off, even while the phone is locked. While it is on, the lock screen says so; press that line to turn it off. Needs \"Glance on the lock screen\" switched on in Accessibility.</string>
 
     <!-- On the panel, when there were more of today's events than room: "+2 more" -->
     <string name="panel_more">+%1$d more</string>
@@ -119,7 +119,7 @@
     <string name="about_privacy_heading">Privacy</string>
     <string name="about_privacy_1">Glance has no internet access, so nothing is sent anywhere and nothing is collected about you. It keeps only your choices on this phone: the order, the apps you chose and its switches.</string>
     <string name="about_privacy_2">It puts on the lock screen what Datebook, Sky and your other apps hand it, and the phone\'s lock does not hide it: anyone holding the phone can read today\'s events, the weather and what is unread. Each app\'s own switch decides what it hands over.</string>
-    <string name="about_privacy_3">With notification access on, it reads the notifications of the apps you choose to count them, and what they say only if you turn on Show what they say. Without Datebook, it reads today\'s events from Mudita\'s Calendar and, if you allow calendar access, the phone\'s other calendars. As an accessibility service it reads the lock screen only to find where its own items end, and where Katapult\'s widgets sit, if it is there. With Power pressed twice on, it notes when the screen goes on and off to switch the torch, and keeps nothing of it. Ring for calls only and Quiet hours each add a Do Not Disturb rule of their own. It hands the panel\'s lines to Home\'s home screen and to no other app.</string>
+    <string name="about_privacy_3">With notification access on, it reads the notifications of the apps you choose to count them, and what they say only if you turn on Show what they say. Without Datebook, it reads today\'s events from Mudita\'s Calendar and, if you allow calendar access, the phone\'s other calendars. As an accessibility service it reads the lock screen only to find where its own items end, and where Katapult\'s widgets sit, if it is there. With Power pressed twice on, it notes when the screen goes on and off to switch the flashlight, and keeps nothing of it. Ring for calls only and Quiet hours each add a Do Not Disturb rule of their own. It hands the panel\'s lines to Home\'s home screen and to no other app.</string>
     <string name="about_privacy_4">There are no ads, no analytics and no tracking. \"Feed the llamas\" in About opens a donation page (square.link) in your browser, only when you press it. The app sends nothing there; if you give, the payment is handled on that page by Square, not by this app.</string>
     <string name="about_terms_heading">Terms</string>
     <string name="about_terms">This app is free software under the GNU General Public License, version 3 only. It comes with no warranty: use it at your own risk. A donation through \"Feed the llamas\" is voluntary and unlocks nothing: the app is the same with or without one.</string>
