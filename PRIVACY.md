@@ -37,7 +37,8 @@ today's events itself, if you turn that on. It has no network access and sends n
   hide a notification's content on the lock screen - the phone set to hide private content, and
   the notification or its channel marked private - Glance shows its public version or nothing
   but the count. With the phone set to show no notifications on the lock screen at all, Glance
-  counts none and shows none of their words. Left uncounted: ongoing ones (a player, a download), a
+  counts none and shows none of their words; set to hide silent ones there, Glance leaves the
+  silent ones out the same way. Left uncounted: ongoing ones (a player, a download), a
   group's summary, and anything the app or you have marked secret on the lock screen. Datebook,
   Sky, Messaging and Mailbox are never counted this way; they have their own place on the panel.
   With **Show what they say** on, Messaging's and Mailbox's newest notification is read too, for

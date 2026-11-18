@@ -1,6 +1,7 @@
 package com.wanderwildwood.hitome
 
 import android.app.Notification
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Context
 import android.provider.Settings
@@ -88,6 +89,14 @@ object Notices {
 
     private const val MESSAGING = "com.wanderwildwood.kotozute"
 
+    /**
+     * Whether a notification is one Android keeps off the lock screen when the phone is set to
+     * hide silent notifications there ([showSilent] false): one Android ranks as ambient, or
+     * below default importance (no sound, no peek).
+     */
+    fun hiddenAsSilent(showSilent: Boolean, ambient: Boolean, importance: Int): Boolean =
+        !showSilent && (ambient || importance < NotificationManager.IMPORTANCE_DEFAULT)
+
     internal fun publish(list: List<Notice>) {
         _now.value = list
     }
@@ -110,7 +119,7 @@ class NoticeListener : NotificationListenerService() {
 
     override fun onListenerConnected() {
         instance = this
-        for (key in listOf(SHOW_ON_LOCK_SCREEN, ALLOW_PRIVATE)) {
+        for (key in listOf(SHOW_ON_LOCK_SCREEN, ALLOW_PRIVATE, SHOW_SILENT)) {
             runCatching { contentResolver.registerContentObserver(Settings.Secure.getUriFor(key), false, lockScreenSettings) }
         }
         recount()
@@ -151,6 +160,8 @@ class NoticeListener : NotificationListenerService() {
             Notices.publish(emptyList())
             return
         }
+        // Set to hide silent notifications on the lock screen: Glance leaves them out too.
+        val showSilent = Settings.Secure.getInt(contentResolver, SHOW_SILENT, 1) != 0
         val active = try { activeNotifications?.toList() } catch (_: Exception) { null } ?: emptyList()
         val ranking = given ?: try { currentRanking } catch (_: Exception) { null }
         // A notification posted after the change's ranking was made is not in it: then the
@@ -187,6 +198,7 @@ class NoticeListener : NotificationListenerService() {
             if (rank.lockscreenVisibilityOverride == Notification.VISIBILITY_SECRET) return@forEach
             if (rank.channel?.lockscreenVisibility == Notification.VISIBILITY_SECRET) return@forEach
             if (rank.isSuspended) return@forEach
+            if (Notices.hiddenAsSilent(showSilent, rank.isAmbient, rank.importance)) return@forEach
             ranks[sbn.key] = rank
             if (isOwn) {
                 if (sbn.postTime >= (own[pkg]?.postTime ?: 0L)) own[pkg] = sbn
@@ -250,6 +262,7 @@ class NoticeListener : NotificationListenerService() {
         /** Settings.Secure keys behind Android's lock-screen notification choices (hidden in the SDK). */
         private const val SHOW_ON_LOCK_SCREEN = "lock_screen_show_notifications"
         private const val ALLOW_PRIVATE = "lock_screen_allow_private_notifications"
+        private const val SHOW_SILENT = "lock_screen_show_silent_notifications"
 
         @Volatile
         var instance: NoticeListener? = null
