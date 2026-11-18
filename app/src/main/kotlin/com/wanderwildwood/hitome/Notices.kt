@@ -153,7 +153,17 @@ class NoticeListener : NotificationListenerService() {
         }
         val active = try { activeNotifications?.toList() } catch (_: Exception) { null } ?: emptyList()
         val ranking = given ?: try { currentRanking } catch (_: Exception) { null }
-        val rank = Ranking()
+        // A notification posted after the change's ranking was made is not in it: then the
+        // current ranking, asked once. Each lookup gets its own Ranking, so nothing is judged by
+        // what was left in it by another notification.
+        val current by lazy { if (given != null) try { currentRanking } catch (_: Exception) { null } else null }
+        fun rankOf(key: String): Ranking? {
+            val r = Ranking()
+            if (ranking?.getRanking(key, r) == true) return r
+            val again = Ranking()
+            return if (current?.getRanking(key, again) == true) again else null
+        }
+        val ranks = mutableMapOf<String, Ranking>()
         val defaultSms = try { Telephony.Sms.getDefaultSmsPackage(this) } catch (_: Exception) { null }
         // Newest first, so the app that just spoke leads the line.
         val latest = mutableMapOf<String, Long>()
@@ -171,11 +181,13 @@ class NoticeListener : NotificationListenerService() {
             if (sbn.isOngoing) return@forEach
             if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return@forEach
             if (n.visibility == Notification.VISIBILITY_SECRET) return@forEach
-            if (ranking != null && ranking.getRanking(sbn.key, rank)) {
-                if (rank.lockscreenVisibilityOverride == Notification.VISIBILITY_SECRET) return@forEach
-                if (rank.channel?.lockscreenVisibility == Notification.VISIBILITY_SECRET) return@forEach
-                if (rank.isSuspended) return@forEach
-            }
+            // With no ranking for it, whether it may be on the lock screen is not known: left out
+            // until the next change, which comes with one.
+            val rank = rankOf(sbn.key) ?: return@forEach
+            if (rank.lockscreenVisibilityOverride == Notification.VISIBILITY_SECRET) return@forEach
+            if (rank.channel?.lockscreenVisibility == Notification.VISIBILITY_SECRET) return@forEach
+            if (rank.isSuspended) return@forEach
+            ranks[sbn.key] = rank
             if (isOwn) {
                 if (sbn.postTime >= (own[pkg]?.postTime ?: 0L)) own[pkg] = sbn
                 return@forEach
@@ -186,14 +198,14 @@ class NoticeListener : NotificationListenerService() {
         }
         // Messaging, then Email, first: they sit under their own counts line.
         val ownLines = Glance.COUNTS.mapNotNull { pkg ->
-            val text = own[pkg]?.let { words(it, ranking, rank) } ?: return@mapNotNull null
+            val text = own[pkg]?.let { words(it, ranks[it.key]) } ?: return@mapNotNull null
             Notices.Notice(pkg, label(pkg), 0, text, counted = false)
         }
         Notices.publish(
             ownLines + counts.entries
                 .sortedByDescending { latest[it.key] ?: 0L }
                 .map { (pkg, count) ->
-                    val text = if (showText) newest[pkg]?.let { words(it, ranking, rank) } else null
+                    val text = if (showText) newest[pkg]?.let { words(it, ranks[it.key]) } else null
                     Notices.Notice(pkg, label(pkg), count, text)
                 },
         )
@@ -203,17 +215,16 @@ class NoticeListener : NotificationListenerService() {
      * What a notification says, as one line: "title: text". Null where Android's own lock
      * screen would hide it: the phone set not to show private content on the lock screen, and
      * the notification or its channel marked private. Then its public version is used if the
-     * app gave one ("2 new messages"), and otherwise only the name and count show.
+     * app gave one ("2 new messages"), and otherwise only the name and count show. [rank] is
+     * this notification's own ranking; without one it is taken as private.
      */
     private fun words(
         sbn: android.service.notification.StatusBarNotification,
-        ranking: RankingMap?,
-        rank: Ranking,
+        rank: Ranking?,
     ): String? {
         val allowPrivate = Settings.Secure.getInt(contentResolver, ALLOW_PRIVATE, 1) != 0
-        val override = if (ranking != null && ranking.getRanking(sbn.key, rank)) rank.lockscreenVisibilityOverride
-            else NotificationManagerVisibilityNone
-        val private = override == Notification.VISIBILITY_PRIVATE ||
+        val override = rank?.lockscreenVisibilityOverride ?: NotificationManagerVisibilityNone
+        val private = rank == null || override == Notification.VISIBILITY_PRIVATE ||
             rank.channel?.lockscreenVisibility == Notification.VISIBILITY_PRIVATE ||
             (override == NotificationManagerVisibilityNone && sbn.notification.visibility == Notification.VISIBILITY_PRIVATE)
         val n = if (private && !allowPrivate) sbn.notification.publicVersion ?: return null else sbn.notification
