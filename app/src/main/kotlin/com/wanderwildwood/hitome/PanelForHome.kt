@@ -16,6 +16,7 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 
 /**
  * The panel's lines for a home screen: Home (com.wanderwildwood.iori), which draws them
@@ -84,11 +85,21 @@ class PanelForHome : ContentProvider() {
         }
     }
 
-    /** One source being asked: its answer to come, and the signal that calls the ask off. */
-    private class Ask(val future: Future<Answer>?, val signal: CancellationSignal) {
+    /**
+     * One source being asked: its answer to come, and the signal that calls the ask off.
+     * [claimed] is taken by whichever comes first, the ask starting or being called off; an ask
+     * called off before it started never runs, so the call-off frees its source in [busy].
+     */
+    private class Ask(
+        val future: Future<Answer>?,
+        val signal: CancellationSignal,
+        val pkg: String? = null,
+        val claimed: AtomicBoolean = AtomicBoolean(false),
+    ) {
         fun cancel() {
             signal.cancel()
             future?.cancel(true)
+            if (pkg != null && claimed.compareAndSet(false, true)) busy.remove(pkg)
         }
     }
 
@@ -118,8 +129,11 @@ class PanelForHome : ContentProvider() {
     private fun ask(context: Context, pkg: String, calendarInstalled: Boolean): Ask {
         val signal = CancellationSignal()
         if (busy.putIfAbsent(pkg, true) != null) return Ask(null, signal)
+        val claimed = AtomicBoolean(false)
         val future = try {
             pool.submit<Answer> {
+                // Called off before it began: the call-off has already freed the source.
+                if (!claimed.compareAndSet(false, true)) return@submit Answer(NO_ANSWER)
                 try {
                     answer(context, pkg, calendarInstalled, signal)
                 } finally {
@@ -130,7 +144,7 @@ class PanelForHome : ContentProvider() {
             busy.remove(pkg)
             null
         }
-        return Ask(future, signal)
+        return Ask(future, signal, if (future != null) pkg else null, claimed)
     }
 
     private fun waitFor(ask: Ask, deadline: Long): Answer {
@@ -238,9 +252,10 @@ class PanelForHome : ContentProvider() {
 
         /**
          * One thread per source at most: [busy] keeps a source from being asked again while it
-         * has not answered, so the pool never needs more.
+         * has not answered. Apps found by their provider are sources too, so the pool grows with
+         * them rather than queueing an ask behind another source's.
          */
-        private val pool: ExecutorService = Executors.newFixedThreadPool(Glance.SOURCES.size.coerceIn(1, 12)) { r ->
+        private val pool: ExecutorService = Executors.newCachedThreadPool { r ->
             Thread(r, "panel-for-home").apply { isDaemon = true }
         }
 
