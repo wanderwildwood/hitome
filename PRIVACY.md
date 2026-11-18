@@ -56,6 +56,11 @@ today's events itself, if you turn that on. It has no network access and sends n
 - **The torch, only if you turn on Power pressed twice.** Glance notes when the screen goes on
   and off, keeps nothing of it, and switches the torch. It does not open the camera. The code is
   `app/src/main/kotlin/com/wanderwildwood/hitome/Torch.kt`.
+- **Home's dark switch**, so Glance and its panel can follow it. Glance asks Home
+  (`com.wanderwildwood.iori`), and only Home's own release, whether that switch is on and when it
+  was last pressed: while Glance's settings are open, as the screen comes on, and when Home says
+  the switch was pressed. With no such Home on the phone it asks nothing. The code is `app/src/main/kotlin/com/wanderwildwood/hitome/HomeDark.kt`
+  and `app/src/main/kotlin/com/wanderwildwood/hitome/ui/DarkMode.kt`.
 
 ## What anyone can see
 
@@ -79,7 +84,8 @@ The code is `app/src/main/kotlin/com/wanderwildwood/hitome/PanelForHome.kt`.
 
 Your choices: the apps, their order, the text size, its switches (what notifications say,
 today's events, the torch, Ring for calls only, Quiet hours and its times and days, whether
-repeat callers ring), and nothing else: no history and no copy of what it shows.
+repeat callers ring, dark mode), what Home's dark switch last said and when, and nothing else:
+no history and no copy of what it shows.
 
 ## Checking for yourself
 
