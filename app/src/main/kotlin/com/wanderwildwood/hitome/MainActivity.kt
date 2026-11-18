@@ -117,6 +117,7 @@ private fun MainScreen() {
     var askedService by rememberSaveable { mutableStateOf(false) }
     var askedAccess by rememberSaveable { mutableStateOf(false) }
     val restricted = remember(checks) { RestrictedSettings.blocked(context) }
+    val duraSpeed = remember { DuraSpeed.present(context) }
     val appsOn = remember(checks, choosing) { appsOnCount(context) }
     val othersChosen = remember(checks, choosing) { Notices.chosen(context).isNotEmpty() }
     var showText by remember { mutableStateOf(Notices.showText(context)) }
@@ -388,6 +389,17 @@ private fun MainScreen() {
                         // controls cannot see this torch: off with the switch, so it is never left on.
                         if (!torchOn) Torch.off(context)
                     }
+                }
+            }
+            // Only on a phone with DuraSpeed (a Kompakt): the one way in that needs no computer.
+            if (duraSpeed) {
+                item {
+                    Heading(stringResource(R.string.duraspeed_heading))
+                    Row(
+                        title = stringResource(R.string.duraspeed_open),
+                        value = stringResource(R.string.duraspeed_note),
+                        chevron = true,
+                    ) { DuraSpeed.open(context) }
                 }
             }
         }

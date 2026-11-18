@@ -26,6 +26,8 @@
     <queries>
         <!-- Home, whose dark mode switch this app follows when Home is installed. -->
         <package android:name="com.wanderwildwood.iori" />
+        <!-- DuraSpeed on a Kompakt, so Settings can offer a way to its App info page. -->
+        <package android:name="com.mediatek.duraspeed" />
         <intent>
             <action android:name="android.intent.action.VIEW" />
             <category android:name="android.intent.category.BROWSABLE" />
