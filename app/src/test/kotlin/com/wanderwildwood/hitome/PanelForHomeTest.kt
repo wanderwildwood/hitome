@@ -51,8 +51,9 @@ class PanelForHomeTest {
         assertEquals(true, Glance.listed(Glance.UNREAD, mapOf("com.wanderwildwood.tayori" to true), false))
     }
 
+    // Keyed as Glance.section() keys an answer: by the package that gave it.
     private fun music(pkg: String, playing: Boolean?) =
-        Glance.Section(pkg, null, listOf(Glance.Line("Playing", "Song", false)), key = Glance.MUSIC, playing = playing)
+        Glance.Section(pkg, null, listOf(Glance.Line("Playing", "Song", false)), playing = playing)
 
     @Test
     fun musicBoxAndMusicBoxKShareOnePlace() {
@@ -71,6 +72,17 @@ class PanelForHomeTest {
         assertEquals(Glance.MUSIC, Glance.pickPlaying(listOf(music(Glance.MUSIC, null), music(Glance.MUSIC_K, null)))?.packageName)
         assertEquals(Glance.MUSIC_K, Glance.pickPlaying(listOf(null, music(Glance.MUSIC_K, null)))?.packageName)
         assertNull(Glance.pickPlaying(listOf(null, null)))
+    }
+
+    @Test
+    fun musicBoxKsAnswerTakesTheMusicPlace() {
+        val k = music(Glance.MUSIC_K, true)
+        assertEquals(Glance.MUSIC_K, k.key)
+        val picked = Glance.pickFor(Glance.MUSIC, listOf(music(Glance.MUSIC, false), k))
+        assertEquals(Glance.MUSIC, picked?.key)
+        assertEquals(Glance.MUSIC_K, picked?.packageName)
+        assertEquals(Glance.MUSIC, Glance.pickFor(Glance.MUSIC, listOf(null, music(Glance.MUSIC_K, null)))?.key)
+        assertNull(Glance.pickFor(Glance.MUSIC, listOf(null, null)))
     }
 
     @Test

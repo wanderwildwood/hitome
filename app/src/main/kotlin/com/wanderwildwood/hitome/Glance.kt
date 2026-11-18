@@ -54,6 +54,12 @@ object Glance {
         return have.firstOrNull { it.playing == true } ?: have.firstOrNull()
     }
 
+    /**
+     * [pickPlaying] for [place], keyed to that place: Music Box K's answer keeps its own package
+     * (a tap opens Music Box K) but takes Music Box's place in the order, or the panel drops it.
+     */
+    fun pickFor(place: String, sections: List<Section?>): Section? = pickPlaying(sections)?.copy(key = place)
+
     /** Whether the app for [pkg]'s place is on the phone; for the music place, either Music Box. */
     fun installed(pm: android.content.pm.PackageManager, pkg: String): Boolean =
         providers(pkg).any { pm.getLaunchIntentForPackage(it) != null }
@@ -387,7 +393,7 @@ object Glance {
     /** Null when the app is not installed, has nothing to say, or has its switch off. */
     fun read(context: Context, packageName: String): Section? {
         val from = providers(packageName)
-        return if (from.size == 1) readOne(context, packageName) else pickPlaying(from.map { readOne(context, it) })
+        return if (from.size == 1) readOne(context, packageName) else pickFor(packageName, from.map { readOne(context, it) })
     }
 
     private fun readOne(context: Context, packageName: String): Section? = try {
