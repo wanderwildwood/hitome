@@ -1,11 +1,15 @@
 package com.wanderwildwood.hitome
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
+import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.database.ContentObserver
 import android.os.Handler
+import android.os.Build
 import android.os.Looper
 import com.wanderwildwood.hitome.ui.DarkMode
+import java.security.MessageDigest
 import java.util.concurrent.Executors
 
 /**
@@ -19,7 +23,9 @@ import java.util.concurrent.Executors
  *
  * The answer is taken as [DarkMode] takes its own: stored under its names, then followed
  * unless the app's own switch holds. DarkMode is the same file in every app and keeps its
- * asking to itself, so the stored names are repeated here and must stay as they are there.
+ * asking to itself, so the stored names are repeated here and must stay as they are there,
+ * and so is its test of Home: only Home's release (by name and certificate) is heard, and with
+ * no such Home, Home's last word is forgotten, as DarkMode does.
  */
 object HomeDark {
 
@@ -57,7 +63,14 @@ object HomeDark {
         val ctx = context.applicationContext
         asker.execute {
             runCatching {
-                ctx.contentResolver.query(DarkMode.HOME, null, null, null, null)?.use { c ->
+                val cursor = if (isHome(ctx)) ctx.contentResolver.query(DarkMode.HOME, null, null, null, null) else null
+                if (cursor == null) {
+                    val p = ctx.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    if (p.getBoolean(KEY_HOME, false)) {
+                        p.edit().putBoolean(KEY_HOME, false).commit()
+                        main.post { follow(ctx) }
+                    }
+                } else cursor.use { c ->
                     if (!c.moveToFirst()) return@use
                     val dark = c.getInt(c.getColumnIndexOrThrow("dark")) != 0
                     val stamp = c.getLong(c.getColumnIndexOrThrow("stamp"))
@@ -69,6 +82,29 @@ object HomeDark {
             }
         }
     }
+
+    /** DarkMode's test of Home, repeated: Home's name, signed with Home's release certificate only. */
+    private fun isHome(context: Context): Boolean {
+        val pm = context.packageManager
+        val owner = DarkMode.HOME.authority?.let { pm.resolveContentProvider(it, 0) }?.packageName ?: return false
+        if (owner != DarkMode.HOME_PACKAGE) return false
+        val debuggable = context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
+        val certs = if (debuggable) DarkMode.DEBUG_CERTS_SHA256 + DarkMode.HOME_CERT_SHA256 else setOf(DarkMode.HOME_CERT_SHA256)
+        val signers = signers(pm, owner)
+        return signers.isNotEmpty() && signers.all { it in certs }
+    }
+
+    @Suppress("DEPRECATION")
+    private fun signers(pm: PackageManager, pkg: String): List<String> = runCatching {
+        val raw = if (Build.VERSION.SDK_INT >= 28) {
+            pm.getPackageInfo(pkg, PackageManager.GET_SIGNING_CERTIFICATES).signingInfo?.apkContentsSigners
+        } else {
+            pm.getPackageInfo(pkg, PackageManager.GET_SIGNATURES).signatures
+        }
+        raw.orEmpty().map { sig ->
+            MessageDigest.getInstance("SHA-256").digest(sig.toByteArray()).joinToString("") { "%02x".format(it) }
+        }
+    }.getOrDefault(emptyList())
 
     /**
      * What DarkMode does once it has heard from Home: unless the app's own switch holds, it
