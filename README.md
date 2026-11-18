@@ -61,9 +61,9 @@ Pressing a section, or an app's name, unlocks the phone and opens that app.
 Glance knows nothing on its own. Each app hands it its own lines and has its own switch, in its
 own settings, to stop. An app that is not installed, has nothing to say, or has its switch off
 simply leaves no line. Field Kit, Medicine and Wallet also wait for a switch in Glance, under
-**What it shows**, which is there once the app is installed and off until you turn it on. Other
-apps are the exception: Glance counts their notifications itself, and only for the apps you
-choose.
+**On the lock screen**, then **Apps**, which is there once the app is installed and off until
+you turn it on. Other apps are the exception: Glance counts their notifications itself, and only
+for the apps you switch on in the same list.
 
 ## Where it sits
 
@@ -71,9 +71,9 @@ It measures where the lock screen's own items end - the date, the charging line,
 player - and starts below the lowest, each time the screen wakes. It stops above the strip Music
 Box and Audio Reader draw near the foot of the screen, and above the padlock.
 
-The parts are drawn in the order they are listed under **What it shows** in Glance, which is
-the order above until you change it: hold a row and drag it, or hold and let go for **Move to
-top**, **Move up** and **Move down**. Unread and other apps' counts move as one. When there is
+The parts are drawn in the order they are listed under **Order** in Glance, which is the order
+above until you change it with the up and down arrows beside each part. Unread and other apps'
+counts move as one. When there is
 not room for all of it, the parts nearest the top are kept, and today's events give up lines
 before anything else.
 
@@ -95,10 +95,11 @@ nowhere, it does not show; dragging Katapult's notifications lower makes room.
    locking the phone.
    **Text size** draws the panel at Normal, Large or Larger: the words, headings and rules grow
    together, and the panel still stops above the music strip and the padlock.
-4. For other apps: press **Notifications are not counted**, turn on notification access for
-   Glance, then **Choose apps**. Nothing is counted until you choose at least one.
+4. For other apps: open **Apps** and switch on the ones to count. Glance then asks for
+   notification access (or shows a **Notification access** row until it has it). Nothing is
+   counted until you switch on at least one.
 
-**Ring for calls only**, under **Other apps' notifications**, lets calls and alarms ring and brings every other
+**Ring for calls only**, under **Sound**, lets calls and alarms ring and brings every other
 notification in silent; they still show on the lock screen and on the panel. It is a Do Not
 Disturb rule of Glance's own, listed with the phone's other Do Not Disturb rules, and it leaves
 the phone's own Do Not Disturb settings alone. It needs notification access. Turning on the
