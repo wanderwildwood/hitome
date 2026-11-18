@@ -244,7 +244,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
             (shownSections().isNotEmpty() || notices.value.isNotEmpty()) &&
             !inCall() &&
             !covered &&
-            !pinShowing()
+            !pinShowing() &&
+            !powerMenuShowing()
         if (show) {
             place()
         } else {
@@ -533,6 +534,17 @@ class LockscreenPanel(private val service: AccessibilityService) :
         false
     }
 
+    /**
+     * The power menu (long press on the power key) is a system window, not an app's, so
+     * [appOverLockScreen] does not see it; without this the panel sat over Power off and Restart.
+     * Android names that window "ActionsDialog".
+     */
+    private fun powerMenuShowing(): Boolean = try {
+        service.windows.any { it.title?.toString() == POWER_MENU_TITLE }
+    } catch (_: Exception) {
+        false
+    }
+
     /** A ringing or live call draws its own screen over the lock screen. */
     private fun inCall(): Boolean = try {
         when (service.getSystemService(AudioManager::class.java).mode) {
@@ -548,6 +560,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private companion object {
         const val SYSTEM_UI = "com.android.systemui"
         const val KATAPULT = "com.gezimos.katapult"
+        const val POWER_MENU_TITLE = "ActionsDialog"
         // The width of the lock screen's own dotted rules, so the panel lines up under them.
         const val WIDTH_DP = com.wanderwildwood.hitome.ui.PANEL_WIDTH_DP.toFloat()
         const val GAP_DP = 8f
