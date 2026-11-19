@@ -183,7 +183,7 @@ private fun Foot(
  */
 @Composable
 private fun leadWidth(lines: List<Glance.Line>): Dp {
-    val leads = lines.mapNotNull { it.lead }
+    val leads = lines.mapNotNull { it.lead }.filterNot(::isMark)
     if (leads.isEmpty()) return MIN_LEAD
     val measurer = rememberTextMeasurer()
     val style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
@@ -195,10 +195,29 @@ private fun leadWidth(lines: List<Glance.Line>): Dp {
 private val MIN_LEAD = 64.dp
 private val LEAD_GAP = 8.dp
 
+/**
+ * A lead that is only a mark, as Memo's "•" before a pinned note's items, not a time: it is set
+ * in under the section's lines without one and its text follows close after it, rather than
+ * taking the time column (GitHub #1).
+ */
+private fun isMark(lead: String) = lead.length == 1 && !lead[0].isLetterOrDigit()
+
+private val MARK_INDENT = 10.dp
+private val MARK_GAP = 5.dp
+
 @Composable
 private fun LineRow(line: Glance.Line, leadWidth: Dp) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        if (line.lead != null) {
+        if (line.lead != null && isMark(line.lead)) {
+            Spacer(Modifier.width(MARK_INDENT))
+            TextMMD(
+                text = line.lead,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+            )
+            Spacer(Modifier.width(MARK_GAP))
+        } else if (line.lead != null) {
             TextMMD(
                 text = line.lead,
                 style = MaterialTheme.typography.bodySmall,
