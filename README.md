@@ -11,7 +11,7 @@ phone's dark setting and Home's dark switch.
 
 | | |
 |---|---|
-| ![Glance: the switches for each part](screenshots/1-app.png) | ![The order, and the other apps' notifications](screenshots/2-more.png) |
+| ![Glance: what the lock screen shows](screenshots/1-app.png) | ![Sound, and the flashlight](screenshots/2-more.png) |
 | ![Preview](screenshots/3-preview.png) | ![About: Privacy](screenshots/4-about.png) |
 
 ## What it shows
