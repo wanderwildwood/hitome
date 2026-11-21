@@ -37,6 +37,24 @@ object Glance {
         val playing: Boolean? = null,
     )
 
+    /**
+     * [section] in one line, for a lock screen crowded by its own player or notifications: its
+     * heading leads (or, without one, its first line's lead), then its first line, then "+N"
+     * for what is left out, counted as [leftOut][com.wanderwildwood.hitome.ui.leftOut] counts.
+     */
+    fun oneLine(section: Section): Section {
+        val first = section.lines.firstOrNull() ?: return section
+        val rest = section.lines.drop(1).sumOf { if (it.more > 0) it.more else 1 }
+        val more = if (rest > 0) " +$rest" else ""
+        val firstLead = first.lead?.takeIf { it.length > 1 || it.firstOrNull()?.isLetterOrDigit() == true }
+        val (lead, text) = if (section.heading != null) {
+            section.heading to listOfNotNull(firstLead, first.text).joinToString(" ")
+        } else {
+            first.lead to first.text
+        }
+        return section.copy(heading = null, lines = listOf(Line(lead, text + more, first.bold)))
+    }
+
     /** Music Box, whose place on the panel is also taken by Music Box K when that is the one playing. */
     const val MUSIC = "com.wanderwildwood.jimeikin"
     const val MUSIC_K = "com.wanderwildwood.jimeikin.k"
@@ -365,7 +383,9 @@ object Glance {
         return sources(order(context)).mapNotNull { pkg ->
             when {
                 !shownHere(context, pkg) -> null
-                pkg in PLAYERS && ownControlsOn(context, pkg) -> null
+                // Beside a player that already names what is playing - the app's own strip, or
+                // the lock screen's own player (MuditaOS 2.0, KompaktOS) - a song line repeats it.
+                pkg in PLAYERS && (SystemLockScreen.drawsItsOwn() || ownControlsOn(context, pkg)) -> null
                 pkg == CALENDAR && !calendarInstalled -> Today.read(context)?.copy(key = CALENDAR)
                 else -> read(context, pkg)
             }

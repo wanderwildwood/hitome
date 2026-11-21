@@ -39,6 +39,8 @@ internal const val LINE_DP = 22
 internal const val RULE_DP = 13
 /** The 2dp above and below each section and the counts line. */
 internal const val PAD_DP = 4
+/** Between the rows when each section is one line, so they read apart. */
+internal const val ONE_LINE_GAP_DP = 6
 /** The panel's width, the lock screen's own dotted rules. */
 internal const val PANEL_WIDTH_DP = 240
 
@@ -59,6 +61,8 @@ fun GlancePanel(
     roomDp: Int,
     onOpen: (String) -> Unit,
     scale: Float = 1f,
+    /** Each section already in one line ([Glance.oneLine]): one rule above them all, leads aligned. */
+    oneLine: Boolean = false,
 ) {
     // A larger text size draws the whole panel larger, type, rules and spacing together, so it
     // is laid out exactly as at Normal: [roomDp] and every height here are in the panel's own
@@ -70,7 +74,7 @@ fun GlancePanel(
             val withText = notices.any { it.text != null }
             // Without words, Messaging's and Email's entries have nothing to add to their counts.
             val allNotices = if (withText) notices else notices.filter { it.counted }
-            val kept = chosen(sections, allNotices, order, roomDp)
+            val kept = chosen(sections, allNotices, order, roomDp, oneLine)
             val keptSections = sections.filter { it.key in kept }
             @Suppress("NAME_SHADOWING")
             val notices = if (Glance.UNREAD in kept) allNotices else emptyList()
@@ -81,6 +85,9 @@ fun GlancePanel(
             val footDp = if (counts.isEmpty() && noticeLines == 0) 0
                 else RULE_DP + PAD_DP + (if (counts.isNotEmpty()) LINE_DP else 0) + noticeLines * LINE_DP
             val fitted = fit(keptSections.filter { it.key != Glance.UNREAD }, order, footDp, roomDp)
+            val sharedLead = if (oneLine) leadWidth(fitted.flatMap { it.lines }) else null
+            var ruled = false
+            var first = true
             Column(Modifier.fillMaxWidth().background(Color.White)) {
                 order.forEach { key ->
                     if (key == Glance.UNREAD) {
@@ -88,8 +95,13 @@ fun GlancePanel(
                         return@forEach
                     }
                     fitted.filter { it.key == key }.forEach { section ->
-                        Rule()
-                        Column(Modifier.fillMaxWidth().clickable { onOpen(section.packageName) }.padding(vertical = 2.dp)) {
+                        if (!oneLine || !ruled) Rule()
+                        ruled = true
+                        // One line a section: the rows close up, with the pad once above them all.
+                        val pad = if (!oneLine) Modifier.padding(vertical = 2.dp)
+                            else Modifier.padding(top = if (first) PAD_DP.dp else ONE_LINE_GAP_DP.dp)
+                        first = false
+                        Column(Modifier.fillMaxWidth().clickable { onOpen(section.packageName) }.then(pad)) {
                             section.heading?.let {
                                 TextMMD(
                                     text = it,
@@ -98,12 +110,16 @@ fun GlancePanel(
                                     maxLines = 1,
                                 )
                             }
-                            val leadWidth = leadWidth(section.lines)
+                            val leadWidth = sharedLead ?: leadWidth(section.lines)
                             section.lines.forEach { line -> LineRow(line, leadWidth) }
                         }
                     }
                 }
-                if (fitted.isNotEmpty() || counts.isNotEmpty() || noticeLines > 0) Rule()
+                // One line a section is for a crowded lock screen: the rule under it only where
+                // there is room left for it.
+                val usedDp = baseDp(oneLine) + fitted.size * (LINE_DP + ONE_LINE_GAP_DP) + footDp
+                val ruleFits = !oneLine || usedDp + RULE_DP <= roomDp
+                if (ruleFits && (fitted.isNotEmpty() || counts.isNotEmpty() || noticeLines > 0)) Rule()
             }
         } }
     }
@@ -380,6 +396,7 @@ private fun parts(
     sections: List<Glance.Section>,
     notices: List<Notices.Notice>,
     order: List<String>,
+    oneLine: Boolean = false,
 ): List<Pair<String, Int>> = order.mapNotNull { key ->
     if (key == Glance.UNREAD) {
         val counts = sections.any { it.key == Glance.UNREAD }
@@ -390,17 +407,20 @@ private fun parts(
         else key to RULE_DP + PAD_DP + (if (counts) LINE_DP else 0) + noticeLines * LINE_DP
     } else {
         val section = sections.firstOrNull { it.key == key } ?: return@mapNotNull null
-        key to sectionDp(section, leastLines(section))
+        key to if (oneLine) LINE_DP + ONE_LINE_GAP_DP else sectionDp(section, leastLines(section))
     }
 }
 
 /** The least height, in dp, the whole panel can be drawn in. See [parts]. */
-internal fun leastDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>): Int =
-    parts(sections, notices, order).sumOf { it.second } + RULE_DP
+internal fun leastDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>, oneLine: Boolean = false): Int =
+    parts(sections, notices, order, oneLine).sumOf { it.second } + baseDp(oneLine)
+
+/** Beside the parts: the rule under them all, or with one line a section the rule and pad over them. */
+private fun baseDp(oneLine: Boolean) = if (oneLine) RULE_DP + PAD_DP - ONE_LINE_GAP_DP else RULE_DP
 
 /** The least height of the first part in [order] that has something to show; 0 for none. */
-internal fun firstDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>): Int =
-    parts(sections, notices, order).firstOrNull()?.let { it.second + RULE_DP } ?: 0
+internal fun firstDp(sections: List<Glance.Section>, notices: List<Notices.Notice>, order: List<String>, oneLine: Boolean = false): Int =
+    parts(sections, notices, order, oneLine).firstOrNull()?.let { it.second + baseDp(oneLine) } ?: 0
 
 /**
  * The parts drawn in [roomDp]: the first in [order] always, then each after it that still fits,
@@ -412,10 +432,11 @@ internal fun chosen(
     notices: List<Notices.Notice>,
     order: List<String>,
     roomDp: Int,
+    oneLine: Boolean = false,
 ): Set<String> {
     val kept = mutableSetOf<String>()
-    var used = RULE_DP
-    parts(sections, notices, order).forEach { (key, dp) ->
+    var used = baseDp(oneLine)
+    parts(sections, notices, order, oneLine).forEach { (key, dp) ->
         if (kept.isEmpty() || used + dp <= roomDp) {
             kept += key
             used += dp

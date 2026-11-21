@@ -81,6 +81,9 @@ class LockscreenPanel(private val service: AccessibilityService) :
     private var overlayTop = -1
     private var overlayRoom = -1
     private var overlayTrimmed = false
+    // Each section in one line ([Glance.oneLine]): while the lock screen's own player or
+    // notifications take the middle of the screen (MuditaOS 2.0, KompaktOS).
+    private val oneLine = mutableStateOf(false)
 
     private val screenReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
@@ -270,6 +273,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val scale = Glance.textScale(service)
         val unit = density * scale
         val bottom = lockScreenBottom()
+        oneLine.value = SystemLockScreen.drawsItsOwn() && bottom != null &&
+            bottom > service.resources.displayMetrics.heightPixels * CROWDED_PART
         // ⚠ The lock screen's own items gone, on a lock screen that had them, is the lock screen
         // going: Android still says "locked" for up to 0.6 s after it has visibly gone, and a
         // panel put back then was drawn over the home screen. The fallback place is only for
@@ -283,7 +288,10 @@ class LockscreenPanel(private val service: AccessibilityService) :
         val gap = (GAP_DP * density).toInt()
         val screen = service.resources.displayMetrics.heightPixels
         var top = bottom?.let { it + gap } ?: (FALLBACK_TOP_DP * density).toInt()
-        val floor = screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
+        // Where the lock screen has a player of its own the music apps draw no strip near the
+        // foot, and the panel may come down to just above the padlock.
+        val floor = if (SystemLockScreen.drawsItsOwn()) (screen * PADLOCK_PART).toInt()
+            else screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
         // Katapult's widgets are made room for: its music player and its notifications, which
         // can be dragged anywhere. They split the room between the lock screen's items and the
         // music strip into parts, and the panel takes the first part it fits in whole: all of
@@ -301,8 +309,8 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
         if (floor > from || katapult.isEmpty()) gaps += from to floor
         val order = shownOrder()
-        val whole = leastDp(shownSections(), notices.value, order)
-        val part = firstDp(shownSections(), notices.value, order)
+        val whole = leastDp(shownSections(), notices.value, order, oneLine.value)
+        val part = firstDp(shownSections(), notices.value, order, oneLine.value)
         fun fitting(least: Int) = gaps.firstOrNull { (a, b) -> (b - a) / unit >= least }
         // Without Katapult's widgets the panel takes what room there is and never hides: on a
         // tight lock screen (Mudita's music player, a charging line) it keeps what fits, in order.
@@ -359,6 +367,7 @@ class LockscreenPanel(private val service: AccessibilityService) :
                     roomDp = room,
                     onOpen = { pkg -> open(pkg) },
                     scale = scale,
+                    oneLine = oneLine.value,
                 )
             }
         }
@@ -437,8 +446,10 @@ class LockscreenPanel(private val service: AccessibilityService) :
      * The sections, with the torch's line over them all while it is on: it is the one thing on
      * the panel that is pressed to be put right rather than looked at.
      */
-    private fun shownSections(): List<Glance.Section> =
-        if (torchShown()) listOf(torchSection()) + sections.value else sections.value
+    private fun shownSections(): List<Glance.Section> {
+        val own = if (oneLine.value) sections.value.map(Glance::oneLine) else sections.value
+        return if (torchShown()) listOf(torchSection()) + own else own
+    }
 
     private fun shownOrder(): List<String> =
         if (torchShown()) listOf(Torch.PANEL_KEY) + Glance.order(service) else Glance.order(service)
@@ -472,16 +483,27 @@ class LockscreenPanel(private val service: AccessibilityService) :
      */
     private fun lockScreenBottom(): Int? = try {
         val screen = service.resources.displayMetrics.heightPixels
-        val limit = (screen * UPPER_PART).toInt()
+        // Where the lock screen draws its own player and notifications (MuditaOS 2.0,
+        // KompaktOS), the player's box counts as well as what is in it - Mudita 2.0 draws its
+        // frame 18 px below its buttons, and a panel under the buttons alone cut into it - and
+        // notification rows count down to the padlock, since a missed call or a text puts
+        // them under the player - their boxes too, which end below their text. A box reaching
+        // past that is one of the lock screen's own frames, and is left out.
+        val own = SystemLockScreen.drawsItsOwn()
+        val upper = (screen * UPPER_PART).toInt()
+        val leafLimit = if (own) (screen * PADLOCK_PART).toInt() else upper
         var lowest = -1
         val bounds = Rect()
         service.windows.forEach { window ->
             val root = window.root ?: return@forEach
             if (root.packageName != SYSTEM_UI) return@forEach
             fun walk(node: AccessibilityNodeInfo) {
-                if (node.isVisibleToUser && node.childCount == 0) {
+                if (node.isVisibleToUser && (node.childCount == 0 || own)) {
                     node.getBoundsInScreen(bounds)
-                    // Leaves only, in the upper part, and not the status bar along the top.
+                    // A box counts only in the upper part, except where the lock screen draws
+                    // its own notifications: their rows are boxes too, and reach below it.
+                    val limit = if (node.childCount == 0 || own) leafLimit else upper
+                    // Not the status bar along the top.
                     if (bounds.top > STATUS_BAR_PX && bounds.bottom < limit && bounds.height() > 0) {
                         lowest = maxOf(lowest, bounds.bottom)
                     }
@@ -585,6 +607,13 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // The lock screen's own items are measured only in the top 60% of the screen; below
         // that are the padlock and "Swipe Up".
         const val UPPER_PART = 0.6f
+        // Where the lock screen draws its own notifications, they are measured down to here:
+        // below it are the padlock (from 86% on a Kompakt) and the line under it.
+        const val PADLOCK_PART = 0.85f
+        // The lock screen's own items reaching below this - its player or its notification
+        // icons, not just the clock and date (which end at 34% on a Kompakt) - turn the panel
+        // to one line a section.
+        const val CROWDED_PART = 0.4f
         const val STATUS_BAR_PX = 48
         // How often the panel looks again while it is up: the music strips' interval. Faster
         // for most of a second after the lock screen reports a change, which is when an

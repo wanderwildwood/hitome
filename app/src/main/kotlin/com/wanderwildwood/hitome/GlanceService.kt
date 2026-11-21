@@ -1,6 +1,7 @@
 package com.wanderwildwood.hitome
 
 import android.accessibilityservice.AccessibilityService
+import android.accessibilityservice.AccessibilityServiceInfo
 import android.content.Intent
 import android.view.accessibility.AccessibilityEvent
 
@@ -17,6 +18,14 @@ class GlanceService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        // Where the lock screen draws its own player (MuditaOS 2.0, KompaktOS), the player's
+        // box is a plain frame Android leaves out of what this service sees; the panel has to
+        // see it to sit clear of it. Only there: on MuditaOS 1.x the panel measures as before.
+        if (SystemLockScreen.drawsItsOwn()) {
+            serviceInfo = serviceInfo?.apply {
+                flags = flags or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+            }
+        }
         // Connected again without an unbind in between: the old ones go first, or two torches
         // would each answer the same two presses and cancel out.
         panel?.stop()

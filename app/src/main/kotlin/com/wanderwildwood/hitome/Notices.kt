@@ -155,8 +155,11 @@ class NoticeListener : NotificationListenerService() {
             return
         }
         // The phone set to show no notifications on the lock screen: Glance shows none of them
-        // either, neither counts nor words.
-        if (Settings.Secure.getInt(contentResolver, SHOW_ON_LOCK_SCREEN, 1) == 0) {
+        // either, neither counts nor words. Where the lock screen shows its own (MuditaOS 2.0,
+        // KompaktOS), Glance would only repeat them.
+        if (SystemLockScreen.drawsItsOwn() ||
+            Settings.Secure.getInt(contentResolver, SHOW_ON_LOCK_SCREEN, 1) == 0
+        ) {
             Notices.publish(emptyList())
             return
         }
