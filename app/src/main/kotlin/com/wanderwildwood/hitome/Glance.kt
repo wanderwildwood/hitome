@@ -112,6 +112,12 @@ object Glance {
     val SOURCES = STACKED + COUNTS
 
     /**
+     * Sources the lock screen shows itself where it draws its own notifications (MuditaOS 2.0,
+     * KompaktOS): Messaging's unread texts are its unread-text row there. Mailbox's email is not.
+     */
+    val ON_LOCK_SCREEN_ALREADY = setOf("com.wanderwildwood.kotozute")
+
+    /**
      * Apps beyond [SOURCES] that keep a provider of their own at `<package>.glance`, the same
      * one every source above keeps: a new app of the shop's takes part without a new Glance.
      * Found among the apps with a launcher entry (the only ones Glance can see without asking
@@ -386,6 +392,7 @@ object Glance {
                 // Beside a player that already names what is playing - the app's own strip, or
                 // the lock screen's own player (MuditaOS 2.0, KompaktOS) - a song line repeats it.
                 pkg in PLAYERS && (SystemLockScreen.drawsItsOwn() || ownControlsOn(context, pkg)) -> null
+                pkg in ON_LOCK_SCREEN_ALREADY && SystemLockScreen.drawsItsOwn() -> null
                 pkg == CALENDAR && !calendarInstalled -> Today.read(context)?.copy(key = CALENDAR)
                 else -> read(context, pkg)
             }

@@ -284,7 +284,9 @@ private fun MainScreen() {
                 Row(title = stringResource(R.string.order_title), value = stringResource(R.string.order_note), chevron = true) { ordering = true }
             }
             // Other apps are counted from their notifications, which needs Android's leave.
-            if (othersChosen && !access) {
+            // Where the lock screen shows its own notifications, Glance counts none.
+            val countsOthers = !SystemLockScreen.drawsItsOwn()
+            if (countsOthers && othersChosen && !access) {
                 item {
                     Row(
                         title = stringResource(R.string.access_title),
@@ -298,7 +300,7 @@ private fun MainScreen() {
                 // With the panel on, restricted settings were already allowed: nothing to say here.
                 if (askedAccess && !serviceOn && restricted) item { RestrictedHint() }
             }
-            if (access) {
+            if (countsOthers && access) {
                 item {
                     SwitchRow(
                         title = stringResource(R.string.show_text),
@@ -634,8 +636,8 @@ private const val PREVIEW_ROOM_DP = 380
 @Composable
 private fun AppsScreen(access: Boolean, onNeedAccess: () -> Unit, onBack: () -> Unit) {
     val context = LocalContext.current
-    val apps = remember { phoneApps(context) }
     val providers = remember { Glance.SOURCES.toSet() + Glance.discovered(context) }
+    val apps = remember { listedApps(context, providers) }
     // Two apps may share a name (Android's own Calendar and this one): those say which is which.
     val shared = remember(apps) { apps.groupBy { it.second }.filterValues { it.size > 1 }.keys }
     var chosen by remember { mutableStateOf(Notices.chosen(context)) }
@@ -736,11 +738,22 @@ private fun phoneApps(context: android.content.Context): List<Pair<String, Strin
         .sortedBy { it.second.lowercase() }
 }
 
-/** How many of [phoneApps] are on: shown here, or counted from their notifications. */
+/**
+ * The apps the Apps page lists. Where the lock screen shows its own notifications (MuditaOS
+ * 2.0, KompaktOS), Glance counts no other app's and leaves Messaging's texts to the lock
+ * screen's own row, so only the apps it still shows are listed.
+ */
+private fun listedApps(context: android.content.Context, providers: Set<String>): List<Pair<String, String>> {
+    val all = phoneApps(context)
+    if (!SystemLockScreen.drawsItsOwn()) return all
+    return all.filter { (pkg, _) -> pkg in providers && pkg !in Glance.ON_LOCK_SCREEN_ALREADY }
+}
+
+/** How many of [listedApps] are on: shown here, or counted from their notifications. */
 private fun appsOnCount(context: android.content.Context): Int {
     val providers = Glance.SOURCES.toSet() + Glance.discovered(context)
     val chosen = Notices.chosen(context)
-    return phoneApps(context).count { (pkg, _) ->
+    return listedApps(context, providers).count { (pkg, _) ->
         if (pkg in providers) Glance.shownHere(context, pkg) else pkg in chosen
     }
 }
