@@ -19,4 +19,14 @@ class SystemLockScreenTest {
         assertTrue(SystemLockScreen.drawsItsOwnFor("BP2A.250605.031"))
         assertTrue(SystemLockScreen.drawsItsOwnFor(""))
     }
+
+    @Test
+    fun onMuditaOsThePanelStaysLightOnTheLockScreen() {
+        assertTrue(SystemLockScreen.staysLightFor("MuditaOS K 2.0.0"))
+        assertTrue(SystemLockScreen.staysLightFor("MuditaOS K 10.1"))
+        assertTrue(SystemLockScreen.staysLightFor("MuditaOS K 1.6.1"))
+        // KompaktOS and any other Android: their lock screen goes dark, so the panel follows dark mode.
+        assertFalse(SystemLockScreen.staysLightFor("BP2A.250605.031"))
+        assertFalse(SystemLockScreen.staysLightFor(""))
+    }
 }

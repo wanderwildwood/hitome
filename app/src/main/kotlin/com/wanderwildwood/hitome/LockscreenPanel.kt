@@ -392,7 +392,9 @@ class LockscreenPanel(private val service: AccessibilityService) :
             service.getSystemService(WindowManager::class.java).addView(view, params)
             // A window of its own, which dark mode reaches only when handed over; from then on
             // it turns with the phone's dark setting, the app's switch and Home's while it is up.
-            DarkMode.window(view)
+            // Not on MuditaOS: its lock screen stays light in dark mode, and a dark panel under
+            // its light clock and rows was a black block on a light screen.
+            if (!SystemLockScreen.staysLight()) DarkMode.window(view)
             HomeDark.ask(service)
             overlay = view
             overlayTop = top

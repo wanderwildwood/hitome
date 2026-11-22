@@ -20,5 +20,14 @@ object SystemLockScreen {
         return major >= 2
     }
 
+    /**
+     * Whether Glance's panel on the lock screen stays light whatever dark mode says: on MuditaOS,
+     * whose own lock screen stays light (seen on 2.0, 22 Nov 2026), so the panel is not a dark
+     * block on a light screen. KompaktOS and other Android lock screens go dark; there it follows.
+     */
+    fun staysLight(): Boolean = staysLightFor(Build.DISPLAY.orEmpty())
+
+    internal fun staysLightFor(display: String): Boolean = MUDITA.containsMatchIn(display)
+
     private val MUDITA = Regex("^MuditaOS\\b\\D*(\\d+)\\.")
 }
