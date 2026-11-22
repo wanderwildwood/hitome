@@ -155,6 +155,8 @@ For updates, add this repository to [Obtainium](https://github.com/ImranR98/Obta
 
     https://github.com/wanderwildwood/hitome
 
+Questions, ideas, or just saying hello: the wander the dev Discord, <https://discord.gg/UMW8yJg7dQ>
+
 ## Building
 
 ```
