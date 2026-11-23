@@ -284,9 +284,7 @@ private fun MainScreen() {
                 Row(title = stringResource(R.string.order_title), value = stringResource(R.string.order_note), chevron = true) { ordering = true }
             }
             // Other apps are counted from their notifications, which needs Android's leave.
-            // Where the lock screen shows its own notifications, Glance counts none.
-            val countsOthers = !SystemLockScreen.drawsItsOwn()
-            if (countsOthers && othersChosen && !access) {
+            if (othersChosen && !access) {
                 item {
                     Row(
                         title = stringResource(R.string.access_title),
@@ -300,7 +298,7 @@ private fun MainScreen() {
                 // With the panel on, restricted settings were already allowed: nothing to say here.
                 if (askedAccess && !serviceOn && restricted) item { RestrictedHint() }
             }
-            if (countsOthers && access) {
+            if (access) {
                 item {
                     SwitchRow(
                         title = stringResource(R.string.show_text),
@@ -738,16 +736,9 @@ private fun phoneApps(context: android.content.Context): List<Pair<String, Strin
         .sortedBy { it.second.lowercase() }
 }
 
-/**
- * The apps the Apps page lists. Where the lock screen shows its own notifications (MuditaOS
- * 2.0, KompaktOS), Glance counts no other app's notifications, so only the apps it still
- * shows are listed.
- */
-private fun listedApps(context: android.content.Context, providers: Set<String>): List<Pair<String, String>> {
-    val all = phoneApps(context)
-    if (!SystemLockScreen.drawsItsOwn()) return all
-    return all.filter { (pkg, _) -> pkg in providers && pkg !in Glance.ON_LOCK_SCREEN_ALREADY }
-}
+/** The apps the Apps page lists: every app on the phone (23 Nov 2026: on MuditaOS 2.0 again too). */
+private fun listedApps(context: android.content.Context, @Suppress("UNUSED_PARAMETER") providers: Set<String>): List<Pair<String, String>> =
+    phoneApps(context)
 
 /** How many of [listedApps] are on: shown here, or counted from their notifications. */
 private fun appsOnCount(context: android.content.Context): Int {

@@ -155,11 +155,8 @@ class NoticeListener : NotificationListenerService() {
             return
         }
         // The phone set to show no notifications on the lock screen: Glance shows none of them
-        // either, neither counts nor words. Where the lock screen shows its own (MuditaOS 2.0,
-        // KompaktOS), Glance would only repeat them.
-        if (SystemLockScreen.drawsItsOwn() ||
-            Settings.Secure.getInt(contentResolver, SHOW_ON_LOCK_SCREEN, 1) == 0
-        ) {
+        // either, neither counts nor words.
+        if (Settings.Secure.getInt(contentResolver, SHOW_ON_LOCK_SCREEN, 1) == 0) {
             Notices.publish(emptyList())
             return
         }
@@ -179,6 +176,15 @@ class NoticeListener : NotificationListenerService() {
         }
         val ranks = mutableMapOf<String, Ranking>()
         val defaultSms = try { Telephony.Sms.getDefaultSmsPackage(this) } catch (_: Exception) { null }
+        // Where the lock screen draws its own rows (MuditaOS 2.0, KompaktOS) they are missed calls
+        // and unread texts only: the phone app's and the texting app's notifications are left to
+        // them, every other app's are counted as before. (23 Nov 2026: 0.1.58 left out every app's
+        // here, and a Signal message or an email then showed nowhere on the lock screen.)
+        val shownByPhone = if (SystemLockScreen.drawsItsOwn()) {
+            setOfNotNull(defaultSms, try { getSystemService(android.telecom.TelecomManager::class.java)?.defaultDialerPackage } catch (_: Exception) { null })
+        } else {
+            emptySet()
+        }
         // Newest first, so the app that just spoke leads the line.
         val latest = mutableMapOf<String, Long>()
         val newest = mutableMapOf<String, android.service.notification.StatusBarNotification>()
@@ -191,6 +197,7 @@ class NoticeListener : NotificationListenerService() {
             val isOwn = showText && pkg in Glance.COUNTS && Glance.shownHere(this, pkg)
             if (!isOwn && (pkg !in chosen || pkg in Glance.SOURCES)) return@forEach
             if (Notices.repeatsMessaging(pkg, defaultSms)) return@forEach
+            if (pkg in shownByPhone && pkg !in Glance.SOURCES) return@forEach
             val n = sbn.notification
             if (sbn.isOngoing) return@forEach
             if (n.flags and Notification.FLAG_GROUP_SUMMARY != 0) return@forEach
