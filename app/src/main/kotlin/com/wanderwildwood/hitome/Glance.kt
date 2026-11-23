@@ -113,9 +113,11 @@ object Glance {
 
     /**
      * Sources the lock screen shows itself where it draws its own notifications (MuditaOS 2.0,
-     * KompaktOS): Messaging's unread texts are its unread-text row there. Mailbox's email is not.
+     * KompaktOS). None now: Messaging's count was left out there (0.1.59) for the lock screen's
+     * unread-text row, but that row never shows a Signal message, so Messaging's unread went
+     * missing from the lock screen altogether (23 Nov 2026). Mailbox's email was never there.
      */
-    val ON_LOCK_SCREEN_ALREADY = setOf("com.wanderwildwood.kotozute")
+    val ON_LOCK_SCREEN_ALREADY = emptySet<String>()
 
     /**
      * Apps beyond [SOURCES] that keep a provider of their own at `<package>.glance`, the same

@@ -740,8 +740,8 @@ private fun phoneApps(context: android.content.Context): List<Pair<String, Strin
 
 /**
  * The apps the Apps page lists. Where the lock screen shows its own notifications (MuditaOS
- * 2.0, KompaktOS), Glance counts no other app's and leaves Messaging's texts to the lock
- * screen's own row, so only the apps it still shows are listed.
+ * 2.0, KompaktOS), Glance counts no other app's notifications, so only the apps it still
+ * shows are listed.
  */
 private fun listedApps(context: android.content.Context, providers: Set<String>): List<Pair<String, String>> {
     val all = phoneApps(context)
