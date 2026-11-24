@@ -272,7 +272,13 @@ class LockscreenPanel(private val service: AccessibilityService) :
         // are counted in it; the lock screen's items and the gaps round it stay in the phone's.
         val scale = Glance.textScale(service)
         val unit = density * scale
-        val bottom = lockScreenBottom()
+        val seen = lockScreenBoxes()
+        val own = SystemLockScreen.drawsItsOwn()
+        val screen = service.resources.displayMetrics.heightPixels
+        // The padlock and the line under it, which wraps to two lines in some languages and
+        // lifts the padlock with it: found each time, so the panel stays above it in any language.
+        val foot = if (own && seen != null) LockScreenLayout.footTop(seen, screen) else null
+        val bottom = seen?.let { LockScreenLayout.contentBottom(it, screen, own, foot, STATUS_BAR_PX) }
         oneLine.value = SystemLockScreen.drawsItsOwn() && bottom != null &&
             bottom > service.resources.displayMetrics.heightPixels * CROWDED_PART
         // ⚠ The lock screen's own items gone, on a lock screen that had them, is the lock screen
@@ -286,11 +292,10 @@ class LockscreenPanel(private val service: AccessibilityService) :
         }
         if (bottom != null) sawLockScreen = true
         val gap = (GAP_DP * density).toInt()
-        val screen = service.resources.displayMetrics.heightPixels
         var top = bottom?.let { it + gap } ?: (FALLBACK_TOP_DP * density).toInt()
         // Where the lock screen has a player of its own the music apps draw no strip near the
         // foot, and the panel may come down to just above the padlock.
-        val floor = if (SystemLockScreen.drawsItsOwn()) (screen * PADLOCK_PART).toInt()
+        val floor = if (own) LockScreenLayout.ownFloor(screen, foot, gap)
             else screen - ((MUSIC_STRIP_TOP_FROM_BOTTOM_DP + GAP_DP) * density).toInt()
         // Katapult's widgets are made room for: its music player and its notifications, which
         // can be dragged anywhere. They split the room between the lock screen's items and the
@@ -479,42 +484,27 @@ class LockscreenPanel(private val service: AccessibilityService) :
     }
 
     /**
-     * The bottom edge, in pixels, of the lowest thing the lock screen draws in the upper part
-     * of the screen: the date, the charging line, or Mudita's music widget. Null when the lock
-     * screen cannot be read, and the panel then takes a fixed place.
+     * Every item the lock screen reports, as boxes for [LockScreenLayout]: the date, the charging
+     * line, Mudita's music widget, and where the lock screen draws its own (MuditaOS 2.0,
+     * KompaktOS) its player's frame, notification rows, the padlock and the line under it. Null
+     * when the lock screen cannot be read, and the panel then takes a fixed place.
      */
-    private fun lockScreenBottom(): Int? = try {
-        val screen = service.resources.displayMetrics.heightPixels
-        // Where the lock screen draws its own player and notifications (MuditaOS 2.0,
-        // KompaktOS), the player's box counts as well as what is in it - Mudita 2.0 draws its
-        // frame 18 px below its buttons, and a panel under the buttons alone cut into it - and
-        // notification rows count down to the padlock, since a missed call or a text puts
-        // them under the player - their boxes too, which end below their text. A box reaching
-        // past that is one of the lock screen's own frames, and is left out.
-        val own = SystemLockScreen.drawsItsOwn()
-        val upper = (screen * UPPER_PART).toInt()
-        val leafLimit = if (own) (screen * PADLOCK_PART).toInt() else upper
-        var lowest = -1
+    private fun lockScreenBoxes(): List<LockScreenLayout.Box>? = try {
+        val boxes = mutableListOf<LockScreenLayout.Box>()
         val bounds = Rect()
         service.windows.forEach { window ->
             val root = window.root ?: return@forEach
             if (root.packageName != SYSTEM_UI) return@forEach
             fun walk(node: AccessibilityNodeInfo) {
-                if (node.isVisibleToUser && (node.childCount == 0 || own)) {
+                if (node.isVisibleToUser) {
                     node.getBoundsInScreen(bounds)
-                    // A box counts only in the upper part, except where the lock screen draws
-                    // its own notifications: their rows are boxes too, and reach below it.
-                    val limit = if (node.childCount == 0 || own) leafLimit else upper
-                    // Not the status bar along the top.
-                    if (bounds.top > STATUS_BAR_PX && bounds.bottom < limit && bounds.height() > 0) {
-                        lowest = maxOf(lowest, bounds.bottom)
-                    }
+                    boxes += LockScreenLayout.Box(bounds.top, bounds.bottom, node.childCount == 0, node.viewIdResourceName)
                 }
                 for (i in 0 until node.childCount) node.getChild(i)?.let { walk(it) }
             }
             walk(root)
         }
-        lowest.takeIf { it > 0 }
+        boxes
     } catch (_: Exception) {
         null
     }
@@ -606,12 +596,6 @@ class LockscreenPanel(private val service: AccessibilityService) :
         const val FALLBACK_TOP_DP = 292f
         // A music app's lock-screen strip: 96dp up from the foot and about 52dp tall.
         const val MUSIC_STRIP_TOP_FROM_BOTTOM_DP = 148f
-        // The lock screen's own items are measured only in the top 60% of the screen; below
-        // that are the padlock and "Swipe Up".
-        const val UPPER_PART = 0.6f
-        // Where the lock screen draws its own notifications, they are measured down to here:
-        // below it are the padlock (from 86% on a Kompakt) and the line under it.
-        const val PADLOCK_PART = 0.85f
         // The lock screen's own items reaching below this - its player or its notification
         // icons, not just the clock and date (which end at 34% on a Kompakt) - turn the panel
         // to one line a section.

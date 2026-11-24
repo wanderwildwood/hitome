@@ -21,9 +21,12 @@ class GlanceService : AccessibilityService() {
         // Where the lock screen draws its own player (MuditaOS 2.0, KompaktOS), the player's
         // box is a plain frame Android leaves out of what this service sees; the panel has to
         // see it to sit clear of it. Only there: on MuditaOS 1.x the panel measures as before.
+        // The items' ids too, so the padlock is known by its id: the line under it wraps to two
+        // lines in some languages and lifts it (see [LockScreenLayout]).
         if (SystemLockScreen.drawsItsOwn()) {
             serviceInfo = serviceInfo?.apply {
-                flags = flags or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS
+                flags = flags or AccessibilityServiceInfo.FLAG_INCLUDE_NOT_IMPORTANT_VIEWS or
+                    AccessibilityServiceInfo.FLAG_REPORT_VIEW_IDS
             }
         }
         // Connected again without an unbind in between: the old ones go first, or two torches
